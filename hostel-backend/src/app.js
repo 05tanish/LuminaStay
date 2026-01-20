@@ -13,7 +13,7 @@ App.use(express.json())
 App.get('/health', (req, res) => {
   res.json({ status: 'OK' })
 })
-
+App.use('/api/auth', authRoutes)
 App.use(globalErrorHandler)
 
 export default App

@@ -1,10 +1,11 @@
-import { hash_password, compare_password } from '../../utils/hash.js'
+import {  compare_password } from '../../utils/hash.js'
 import { signToken } from '../../utils/jwt.js'
 import { aysnchandler } from '../../utils/asyncHandler.js'
 import AppError from '../../utils/AppError.js'
 import { successResponse } from '../../utils/ApiResponse.js'
 import prism from '../../config/db.js'
 import cookieParser from 'cookie-parser';
+
 
 export const login = (aysnchandler(async (req, res) => {
     const { email, password } = req.body;

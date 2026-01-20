@@ -1,3 +1,4 @@
+// verification user exists or not 
 import prisma from "../config/db";
 import AppError from "../utils/AppError";
 import { aysnchandler } from "../utils/asyncHandler";
