@@ -13,7 +13,7 @@ export const  googleLogin = aysnchandler(async(req , res)=>{
     const{token} = req.body;
 
     if(!token){
-        throw (next( new AppError(400,"Googel token not found ")));
+        throw new AppError(400,"Googel token not found ");
     }
    
   const ticket = await client.verifyIdToken({
@@ -21,14 +21,14 @@ export const  googleLogin = aysnchandler(async(req , res)=>{
     audience: process.env.GOOGLE_CLIENT_ID
   })
 
-  const payload = ticket.payload();
+  const payload = ticket.getPayload();
   const email = payload.email
 
   const user = await prisma.user.findUnique({
     where:{email}
   })
   if(!user){
-    throw(next(new AppError(403,"User not allowed. Contact admin.")));
+     throw new AppError(403,"User not allowed. Contact admin.");
   }
 
   const jwtToken = signToken({

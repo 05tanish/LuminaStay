@@ -1,7 +1,7 @@
 // verification user exists or not 
 import prisma from "../config/db";
 import AppError from "../utils/AppError";
-import { aysnchandler } from "../utils/asyncHandler";
+import { aysnchandler } from "../utils/AsyncHandler";
 import { verifyToken } from "../utils/jwt";
 
 export const protect = aysnchandler(async(req, res)=>{
@@ -9,7 +9,7 @@ export const protect = aysnchandler(async(req, res)=>{
     const token  = req.cookies?.token;
 
     if(!token){
-        return (next(new AppError('Not authenticated', 401)))
+        throw new AppError('Not authenticated', 401)
     }
     const decoded = verifyToken(token)
 
@@ -24,7 +24,7 @@ export const protect = aysnchandler(async(req, res)=>{
     }
   })
    if (!user) {
-    throw new AppError('User no longer exists', 401)
+   throw new AppError('User no longer exists', 401)
   }
   req.user = user
   next()

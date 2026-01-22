@@ -1,6 +1,6 @@
 import {  compare_password } from '../../utils/hash.js'
 import { signToken } from '../../utils/jwt.js'
-import { aysnchandler } from '../../utils/asyncHandler.js'
+import { aysnchandler } from '../utils/asyncHandler.js'
 import AppError from '../../utils/AppError.js'
 import { successResponse } from '../../utils/ApiResponse.js'
 import prism from '../../config/db.js'
@@ -11,7 +11,7 @@ export const login = (aysnchandler(async (req, res) => {
     const { email, password } = req.body;
 
     if (!email || !password) {
-        return (next(new AppError(400, "All fields are required")));
+       throw new AppError(400, "All fields are required");
     }
 
     const user = await prism.user.findUnique({
@@ -19,13 +19,13 @@ export const login = (aysnchandler(async (req, res) => {
     });
 
     if (!user) {
-        return (next(new AppError(400, "User not found")));
+        throw new AppError(400, "User not found");
     };
 
     const ismatch = await compare_password(password, user.password);
 
     if (!ismatch) {
-        return (next(new AppError(400, "Password does not match")));
+        throw new AppError(400, "Password does not match");
     };
 
     const token = signToken({
