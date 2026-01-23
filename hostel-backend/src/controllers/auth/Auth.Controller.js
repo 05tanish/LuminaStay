@@ -53,19 +53,6 @@ export const login = (aysnchandler(async (req, res) => {
 }));
 
 
-export const getMe = aysnchandler(async (req, res) => {
-    // req.user is set by your auth middleware (decoded JWT)
-    const user = await prisma.user.findUnique({
-        where: { id: req.user.id }
-    });
-
-    return successResponse(res, {
-        statusCode: 200,
-        message: "Successfully Fetched",
-        data: user
-    });
-});
-
 export const logout = aysnchandler(async (req, res) => {
     // Overwrite the token cookie with empty value and expire it
     res.cookie('token', '', {
