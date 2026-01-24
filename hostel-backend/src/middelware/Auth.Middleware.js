@@ -1,8 +1,8 @@
 // verification user exists or not 
-import prisma from "../config/db";
-import AppError from "../utils/AppError";
-import { aysnchandler } from "../utils/AsyncHandler";
-import { verifyToken } from "../utils/jwt";
+import {prisma} from "../config/db.js";
+import AppError from "../utils/AppError.js";
+import { aysnchandler } from '../utils/AsyncHandler.js'
+import { verifyToken } from "../utils/jwt.js";
 
 export const protect = aysnchandler(async(req, res)=>{
     

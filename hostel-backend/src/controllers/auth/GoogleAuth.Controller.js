@@ -1,10 +1,10 @@
 import { OAuth2Client } from 'google-auth-library'
-import prisma from '../../config/db.js'
-import aysnchandler from "../../utils/AsyncHandler";
-import AppError from "../../utils/AppError"
+import {prisma} from '../../config/db.js'
+import {aysnchandler} from '../../utils/AsyncHandler.js'
+import AppError from "../../utils/AppError.js"
 import { signToken } from '../../utils/jwt.js'
-import successResponse   from '../../utils/ApiResponse.js'
-import { email } from 'zod';
+import {successResponse}   from '../../utils/ApiResponse.js'
+
 
 
 const client = new OAuth2Client(process.env.gooGOOGLE_CLIENT_ID)    

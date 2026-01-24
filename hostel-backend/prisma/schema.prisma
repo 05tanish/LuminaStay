@@ -5,10 +5,89 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
-/* ===================== ENUMS ===================== */
+model User {
+  id            String         @id @default(uuid())
+  name          String
+  email         String         @unique
+  phone         String?        @unique
+  phoneVerified Boolean        @default(false)
+  password      String?
+  role          Role           @default(USER)
+  roomId        String?
+  createdAt     DateTime       @default(now())
+  bed           Bed?           @relation("UserBed")
+  complaints    Complaint[]
+  monthlyFees   MonthlyFee[]
+  notifications Notification[]
+  payments      Payment[]
+  room          Room?          @relation(fields: [roomId], references: [id])
+}
+
+model Room {
+  id        String   @id @default(uuid())
+  roomNo    String   @unique
+  capacity  Int
+  createdAt DateTime @default(now())
+  beds      Bed[]
+  users     User[]
+}
+
+model Bed {
+  id     String  @id @default(uuid())
+  bedNo  String
+  roomId String
+  userId String? @unique
+  room   Room    @relation(fields: [roomId], references: [id])
+  user   User?   @relation("UserBed", fields: [userId], references: [id])
+}
+
+model MonthlyFee {
+  id        String        @id @default(uuid())
+  userId    String
+  month     String
+  amount    Int
+  status    PaymentStatus
+  dueDate   DateTime
+  paidAt    DateTime?
+  createdAt DateTime      @default(now())
+  user      User          @relation(fields: [userId], references: [id])
+  payment   Payment?
+}
+
+model Payment {
+  id                 String      @id @default(uuid())
+  userId             String
+  monthlyFeeId       String      @unique
+  amount             Int
+  mode               PaymentMode
+  transactionId      String?
+  remarks            String?
+  collectedByAdminId String?
+  createdAt          DateTime    @default(now())
+  monthlyFee         MonthlyFee  @relation(fields: [monthlyFeeId], references: [id])
+  user               User        @relation(fields: [userId], references: [id])
+}
+
+model Complaint {
+  id        String          @id @default(uuid())
+  message   String
+  status    ComplaintStatus @default(OPEN)
+  userId    String
+  createdAt DateTime        @default(now())
+  user      User            @relation(fields: [userId], references: [id])
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  title     String
+  message   String
+  read      Boolean  @default(false)
+  userId    String?
+  createdAt DateTime @default(now())
+  user      User?    @relation(fields: [userId], references: [id])
+}
 
 enum Role {
   ADMIN
@@ -30,102 +109,4 @@ enum ComplaintStatus {
   OPEN
   IN_PROGRESS
   RESOLVED
-}
-
-/* ===================== MODELS ===================== */
-
-model User {
-  id            String   @id @default(uuid())
-  name          String
-  email         String   @unique
-  phone         String?  @unique
-  phoneVerified Boolean  @default(false)
-  password      String?
-  role          Role     @default(USER)
-
-  roomId        String?
-  room          Room?    @relation(fields: [roomId], references: [id])
-
-  bed           Bed?     @relation("UserBed")  // back-reference for one-to-one
-
-  monthlyFees   MonthlyFee[]
-  payments      Payment[]
-  complaints    Complaint[]
-  notifications Notification[]
-
-  createdAt     DateTime @default(now())
-}
-
-model Room {
-  id        String @id @default(uuid())
-  roomNo    String @unique
-  capacity  Int
-  createdAt DateTime @default(now())
-
-  users     User[]
-  beds      Bed[]
-}
-
-model Bed {
-  id      String @id @default(uuid())
-  bedNo   String
-  roomId  String
-  userId  String? @unique  // owning side of one-to-one
-
-  room    Room  @relation(fields: [roomId], references: [id])
-  user    User? @relation("UserBed", fields: [userId], references: [id])
-}
-
-/* ===================== BILLING ===================== */
-
-model MonthlyFee {
-  id        String       @id @default(uuid())
-  userId    String
-  month     String       // e.g., "2026-01"
-  amount    Int
-  status    PaymentStatus
-  dueDate   DateTime
-  paidAt    DateTime?
-  createdAt DateTime     @default(now())
-
-  user      User         @relation(fields: [userId], references: [id])
-  payment   Payment?
-}
-
-model Payment {
-  id                 String       @id @default(uuid())
-  userId             String
-  monthlyFeeId       String       @unique
-  amount             Int
-  mode               PaymentMode
-  transactionId      String?
-  remarks            String?
-  collectedByAdminId String?
-  createdAt          DateTime     @default(now())
-
-  user       User       @relation(fields: [userId], references: [id])
-  monthlyFee MonthlyFee @relation(fields: [monthlyFeeId], references: [id])
-}
-
-/* ===================== SUPPORT ===================== */
-
-model Complaint {
-  id        String           @id @default(uuid())
-  message   String
-  status    ComplaintStatus  @default(OPEN)
-  userId    String
-  createdAt DateTime         @default(now())
-
-  user      User             @relation(fields: [userId], references: [id])
-}
-
-model Notification {
-  id        String   @id @default(uuid())
-  title     String
-  message   String
-  read      Boolean  @default(false)
-  userId    String?
-  createdAt DateTime @default(now())
-
-  user      User?    @relation(fields: [userId], references: [id])
 }

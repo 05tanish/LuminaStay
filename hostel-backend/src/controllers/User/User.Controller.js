@@ -1,6 +1,6 @@
 import { aysnchandler } from '../utils/asyncHandler.js'
 import { successResponse } from '../../utils/ApiResponse.js'
-import prisma from '../../config/db.js'
+import {prisma} from '../../config/db.js'
 import AppError from '../../utils/AppError.js'
 
 

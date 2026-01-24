@@ -1,10 +1,10 @@
 import {  compare_password } from '../../utils/hash.js'
 import { signToken } from '../../utils/jwt.js'
-import { aysnchandler } from '../utils/asyncHandler.js'
+import { aysnchandler } from '../../utils/AsyncHandler.js'
 import AppError from '../../utils/AppError.js'
 import { successResponse } from '../../utils/ApiResponse.js'
-import prism from '../../config/db.js'
-import cookieParser from 'cookie-parser';
+import {prisma} from '../../config/db.js'
+import cookieParser from 'cookie-parser'
 
 
 export const login = (aysnchandler(async (req, res) => {
@@ -14,7 +14,7 @@ export const login = (aysnchandler(async (req, res) => {
        throw new AppError(400, "All fields are required");
     }
 
-    const user = await prism.user.findUnique({
+    const user = await prisma.user.findUnique({
         where: { email }
     });
 
