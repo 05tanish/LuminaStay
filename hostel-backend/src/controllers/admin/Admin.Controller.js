@@ -6,3 +6,6 @@ import { ROLES } from '../../constants/Roles.Constants'
 import {PAYMENTSTATUS} from '../../constants/Paymentstatus.constants'
 
 
+export const adduser = aysnchandler(async(req, res)=>{
+    const {name, email, phone, password, role   }= req.body
+})
