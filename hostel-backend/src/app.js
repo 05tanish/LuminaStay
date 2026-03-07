@@ -1,12 +1,12 @@
 import express from 'express'
 import cors from 'cors'
-import globalErrorHandler from "./middelware/Error.Middleware.js"
+import globalErrorHandler from "./middleware/Error.Middleware.js"
 import cookieParser from 'cookie-parser'
-import authroute from '../src/routes/auth/Auth.Routes.js'
+import authroute from './routes/auth/Auth.Routes.js'
 
 const App = express()
 
-App.use(cookieParser()); 
+App.use(cookieParser());
 App.use(cors({ origin: true, credentials: true }))
 App.use(express.json())
 

@@ -1,48 +1,53 @@
-import {  compare_password } from '../../utils/hash.js'
+// Authentication controller — handles login and logout
+import { compare_password } from '../../utils/hash.js'
 import { signToken } from '../../utils/jwt.js'
-import { aysnchandler } from '../../utils/AsyncHandler.js'
+import { asyncHandler } from '../../utils/AsyncHandler.js'
 import AppError from '../../utils/AppError.js'
 import { successResponse } from '../../utils/ApiResponse.js'
-import {prisma} from '../../config/db.js'
-import cookieParser from 'cookie-parser'
+import { prisma } from '../../config/db.js'
 
-
-export const login = (aysnchandler(async (req, res) => {
+// Login with email and password, sets an httpOnly JWT cookie
+export const login = asyncHandler(async (req, res) => {
     const { email, password } = req.body;
 
+    // Ensure both fields are provided
     if (!email || !password) {
-       throw new AppError(400, "All fields are required");
+        throw new AppError("All fields are required", 400);
     }
 
+    // Look up the user by email
     const user = await prisma.user.findUnique({
         where: { email }
     });
 
     if (!user) {
-        throw new AppError(400, "User not found");
-    };
+        throw new AppError("User not found", 400);
+    }
 
+    // Verify the password against the stored hash
     const ismatch = await compare_password(password, user.password);
 
     if (!ismatch) {
-        throw new AppError(400, "Password does not match");
-    };
+        throw new AppError("Password does not match", 400);
+    }
 
+    // Generate a signed JWT containing user id and role
     const token = signToken({
         id: user.id,
         role: user.role
     });
 
+    // Set the token as an httpOnly cookie (7 day expiry)
     res.cookie('token', token, {
         httpOnly: true,
-        secure: false, // true in production (HTTPS)
+        secure: false, // set to true in production (HTTPS)
         sameSite: 'strict',
         maxAge: 7 * 24 * 60 * 60 * 1000
     });
 
     return successResponse(res, {
         statusCode: 200,
-        message: "Login succesfully",
+        message: "Login successfully",
         data: {
             id: user.id,
             name: user.name,
@@ -50,10 +55,10 @@ export const login = (aysnchandler(async (req, res) => {
             role: user.role
         }
     });
-}));
+});
 
-
-export const logout = aysnchandler(async (req, res) => {
+// Logout — clears the JWT cookie
+export const logout = asyncHandler(async (req, res) => {
     // Overwrite the token cookie with empty value and expire it
     res.cookie('token', '', {
         httpOnly: true,
