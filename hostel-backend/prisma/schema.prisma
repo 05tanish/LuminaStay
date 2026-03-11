@@ -43,6 +43,7 @@ model Bed {
   userId String? @unique
   room   Room    @relation(fields: [roomId], references: [id])
   user   User?   @relation("UserBed", fields: [userId], references: [id])
+  @@unique([roomId, bedNo])
 }
 
 model MonthlyFee {
@@ -98,6 +99,9 @@ model NotificationRecipient {
 
   notification   Notification @relation(fields: [notificationId], references: [id])
   user           User         @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+  @@unique([notificationId, userId])
+  @@index([userId])
 }
 
 enum Role {

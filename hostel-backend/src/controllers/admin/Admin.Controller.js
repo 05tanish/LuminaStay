@@ -1,141 +1,181 @@
 // Admin controller — handles admin-only operations like user creation
-import { prisma } from '../../config/db.js'
-import { asyncHandler } from '../../utils/AsyncHandler.js'
-import AppError from '../../utils/AppError.js'
-import { successResponse } from '../../utils/ApiResponse.js'
-import { ROLES } from '../../constants/Roles.Constants.js'
-import { PAYMENT_STATUS } from '../../constants/Paymentstatus.constants.js'
-import { hash_password } from '../../utils/hash.js'
+import { prisma } from "../../config/db.js";
+import { asyncHandler } from "../../utils/AsyncHandler.js";
+import AppError from "../../utils/AppError.js";
+import { successResponse } from "../../utils/ApiResponse.js";
+import { hash_password } from "../../utils/hash.js";
+
 
 // Create a new user (admin-only)
-export const adduser = asyncHandler(async (req, res) => {
-    const { name, email, phone, password, role } = req.body;
+export const addUser = asyncHandler(async (req, res) => {
+  const { name, email, phone, password, role } = req.body;
 
-    // Validate all required fields are present
-    if (!name || !email || !phone || !password || !role) {
-        throw new AppError("All fields are required", 400);
+  if (!name || !email || !phone || !password || !role) {
+    throw new AppError("All fields are required", 400);
+  }
+
+  const existingEmail = await prisma.user.findUnique({
+    where: { email }
+  });
+
+  if (existingEmail) {
+    throw new AppError("User with this email already exists", 409);
+  }
+
+  const existingPhone = await prisma.user.findUnique({
+    where: { phone }
+  });
+
+  if (existingPhone) {
+    throw new AppError("User with this phone already exists", 409);
+  }
+
+  if (role === "ADMIN" && req.user.role !== "ADMIN") {
+    throw new AppError("You cannot assign ADMIN role", 403);
+  }
+
+  const hashedPassword = await hash_password(password);
+
+  const user = await prisma.user.create({
+    data: {
+      name,
+      email,
+      phone,
+      password: hashedPassword,
+      role
+    },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      phone: true,
+      role: true
     }
+  });
 
-    // Check if user with this email already exists
-    const existingUser = await prisma.user.findUnique({
-        where: { email }
-    });
+  return successResponse(res, {
+    statusCode: 201,
+    message: "User created successfully",
+    data: user
+  });
+});
 
-    if (existingUser) {
-        throw new AppError("User with this email already exists", 409);
-    }
 
-    // Hash the password before storing
-    const hashedPassword = await hash_password(password);
-
-    // Create the user in the database
-    const user = await prisma.user.create({
-        data: {
-            name,
-            email,
-            phone,
-            password: hashedPassword,
-            role
-        }
-    });
-
-    // Return success without exposing the password hash
-    return successResponse(res, {
-        statusCode: 201,
-        message: "User created successfully",
-        data: {
-            id: user.id,
-            name: user.name,
-            email: user.email,
-            phone: user.phone,
-            role: user.role
-        }
-    });
-})
-
+// Delete user
 export const deleteUser = asyncHandler(async (req, res) => {
-  const { phone } = req.body;
+  const { userId } = req.body;
 
-  if (!phone) {
-    throw new AppError(200, "Phone Not Found");
+  if (!userId) {
+    throw new AppError("UserId is required", 400);
   }
 
   const deletedUser = await prisma.user.delete({
-    where: {
-      phone: phone,
-    },
+    where: { id: userId }
   });
 
   return successResponse(res, {
     statusCode: 200,
-    message: "User Deleted Successfully",
+    message: "User deleted successfully",
     data: {
       id: deletedUser.id,
-      phone: deletedUser.phone,
-    },
+      phone: deletedUser.phone
+    }
   });
 });
 
-// admin can update role as by default all are created as user 
-export const update_role = asyncHandler(async(req, res)=>{
- const {userid,role}  = req.body;
- 
- if(!userid||!role){
-  throw new AppError(400, "Filelds cannot be empty ");
- }
-  const updaterole = await prisma.user.update({
-    where:{
-      id:userid,
-    },
-    data:{
-      role:role,
-    },
+
+// Update user role
+export const updateRole = asyncHandler(async (req, res) => {
+  const { userId, role } = req.body;
+
+  if (!userId || !role) {
+    throw new AppError("Fields cannot be empty", 400);
+  }
+
+  if (req.user.id === userId) {
+    throw new AppError("You cannot change your own role", 400);
+  }
+
+  const updatedUser = await prisma.user.update({
+    where: { id: userId },
+    data: { role }
   });
-if (req.user.id === userid) {
-  throw new AppError(400,"You cannot change your own role");
-}
+
   return successResponse(res, {
-  statusCode:200,
-  message:"Role is been sucessfulay updated",
-  data:updaterole,
+    statusCode: 200,
+    message: "Role updated successfully",
+    data: updatedUser
   });
 });
 
 
-//admin can broadcast notification to all users 
-export const broadcastnotification = asyncHandler(async(req,res)=>{
-  const {title,message}= req.body;
+// Broadcast notification to all users
+export const broadcastNotification = asyncHandler(async (req, res) => {
+  const { title, message } = req.body;
+
+  if (!title || !message) {
+    throw new AppError("Title and message are required", 400);
+  }
 
   const notification = await prisma.notification.create({
-    data:{
+    data: {
       title,
-      message,
-      userid : null,
-    },
+      message
+    }
   });
-  return successResponse(res,({
-    statusCode:2001,
-    message:"Notification is succesfully send to all users",
-    data:notification
-  }));
+
+  const users = await prisma.user.findMany({
+    select: { id: true }
+  });
+
+  await prisma.notificationRecipient.createMany({
+    data: users.map((user) => ({
+      notificationId: notification.id,
+      userId: user.id
+    }))
+  });
+
+  return successResponse(res, {
+    statusCode: 200,
+    message: "Notification sent to all users",
+    data: notification
+  });
 });
 
-// admin can. send notifation tio particular user 
- export const sendusernotification  = asyncHandler(async(req,res)=>{
-  const{title, message, userid}= req.body;
+
+// Send notification to particular user
+export const sendUserNotification = asyncHandler(async (req, res) => {
+  const { title, message, userId } = req.body;
+
+  if (!title || !message || !userId) {
+    throw new AppError("Title, message and userId are required", 400);
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId }
+  });
+
+  if (!user) {
+    throw new AppError("User not found", 404);
+  }
 
   const notification = await prisma.notification.create({
-    data:{
-      title, 
-      message, 
-      userid
-        },
+    data: {
+      title,
+      message
+    }
   });
 
-  return successResponse(res, ({
-    statusCode:201, 
-    message:"Notification send to user",
-    data:notification
-  }));
-});
+  await prisma.notificationRecipient.create({
+    data: {
+      notificationId: notification.id,
+      userId: userId
+    }
+  });
 
+  return successResponse(res, {
+    statusCode: 201,
+    message: "Notification sent successfully",
+    data: notification
+  });
+});

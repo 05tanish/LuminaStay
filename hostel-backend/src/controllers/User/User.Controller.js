@@ -35,29 +35,30 @@ export const getMe = asyncHandler(async (req, res) => {
 export const getUserNotifications = asyncHandler(async (req, res) => {
   const userId = req.user.id;
 
-  const notifications = await prisma.notification.findMany({
+  const notifications = await prisma.notificationRecipient.findMany({
     where: {
-      OR: [
-        { userId: userId },
-        { userId: null }
-      ]
+      userId: userId
+    },
+    include: {
+      notification: true
     },
     orderBy: {
-      createdAt: "desc"
+      notification: {
+        createdAt: "desc"
+      }
     }
   });
 
   return successResponse(res, {
     statusCode: 200,
-    message: "Notifications fetched",
+    message: "Notifications fetched successfully",
     data: notifications
   });
 });
-
-export const markAsRead = asyncHandler(async (req, res) => {
+export const markNotificationRead = asyncHandler(async (req, res) => {
   const { id } = req.params;
 
-  const notification = await prisma.notification.update({
+  const notification = await prisma.notificationRecipient.update({
     where: { id },
     data: { read: true }
   });
@@ -66,5 +67,25 @@ export const markAsRead = asyncHandler(async (req, res) => {
     statusCode: 200,
     message: "Notification marked as read",
     data: notification
+  });
+});
+
+export const getUnreadNotifications = asyncHandler(async (req, res) => {
+  const userId = req.user.id;
+
+  const notifications = await prisma.notificationRecipient.findMany({
+    where: {
+      userId,
+      read: false
+    },
+    include: {
+      notification: true
+    }
+  });
+
+  return successResponse(res, {
+    statusCode: 200,
+    message: "Unread notifications fetched",
+    data: notifications
   });
 });

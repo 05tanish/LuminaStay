@@ -3,6 +3,7 @@ import cors from 'cors'
 import globalErrorHandler from "./middleware/Error.Middleware.js"
 import cookieParser from 'cookie-parser'
 import authroute from './routes/auth/Auth.Routes.js'
+import adminRoutes from '../src/routes/admin/Admin.Routes.js'
 
 const App = express()
 
@@ -13,8 +14,8 @@ App.use(express.json())
 App.get('/health', (req, res) => {
   res.json({ status: 'OK' })
 })
-
-App.use('/api/auth', authroute)
+App.use("/api/admin", adminRoutes);
+App.use('/api/auth', authroute);
 App.use(globalErrorHandler)
 
 export default App
