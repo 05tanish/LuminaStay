@@ -8,21 +8,23 @@ datasource db {
 }
 
 model User {
-  id            String         @id @default(uuid())
+  id            String   @id @default(uuid())
   name          String
-  email         String         @unique
-  phone         String?        @unique
-  phoneVerified Boolean        @default(false)
+  email         String   @unique
+  phone         String?  @unique
+  phoneVerified Boolean  @default(false)
   password      String?
-  role          Role           @default(USER)
+  role          Role     @default(USER)
   roomId        String?
-  createdAt     DateTime       @default(now())
-  bed           Bed?           @relation("UserBed")
+  createdAt     DateTime @default(now())
+
+  bed           Bed?     @relation("UserBed")
   complaints    Complaint[]
   monthlyFees   MonthlyFee[]
-  notifications Notification[]
   payments      Payment[]
-  room          Room?          @relation(fields: [roomId], references: [id])
+  room          Room?    @relation(fields: [roomId], references: [id])
+
+  notificationRecipients NotificationRecipient[]
 }
 
 model Room {
@@ -83,10 +85,19 @@ model Notification {
   id        String   @id @default(uuid())
   title     String
   message   String
-  read      Boolean  @default(false)
-  userId    String?
   createdAt DateTime @default(now())
-  user      User?    @relation(fields: [userId], references: [id])
+
+  recipients NotificationRecipient[]
+}
+
+model NotificationRecipient {
+  id             String   @id @default(uuid())
+  notificationId String
+  userId         String
+  read           Boolean  @default(false)
+
+  notification   Notification @relation(fields: [notificationId], references: [id])
+  user           User         @relation(fields: [userId], references: [id])
 }
 
 enum Role {

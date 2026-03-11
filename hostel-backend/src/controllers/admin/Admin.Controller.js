@@ -76,3 +76,66 @@ export const deleteUser = asyncHandler(async (req, res) => {
   });
 });
 
+// admin can update role as by default all are created as user 
+export const update_role = asyncHandler(async(req, res)=>{
+ const {userid,role}  = req.body;
+ 
+ if(!userid||!role){
+  throw new AppError(400, "Filelds cannot be empty ");
+ }
+  const updaterole = await prisma.user.update({
+    where:{
+      id:userid,
+    },
+    data:{
+      role:role,
+    },
+  });
+if (req.user.id === userid) {
+  throw new AppError(400,"You cannot change your own role");
+}
+  return successResponse(res, {
+  statusCode:200,
+  message:"Role is been sucessfulay updated",
+  data:updaterole,
+  });
+});
+
+
+//admin can broadcast notification to all users 
+export const broadcastnotification = asyncHandler(async(req,res)=>{
+  const {title,message}= req.body;
+
+  const notification = await prisma.notification.create({
+    data:{
+      title,
+      message,
+      userid : null,
+    },
+  });
+  return successResponse(res,({
+    statusCode:2001,
+    message:"Notification is succesfully send to all users",
+    data:notification
+  }));
+});
+
+// admin can. send notifation tio particular user 
+ export const sendusernotification  = asyncHandler(async(req,res)=>{
+  const{title, message, userid}= req.body;
+
+  const notification = await prisma.notification.create({
+    data:{
+      title, 
+      message, 
+      userid
+        },
+  });
+
+  return successResponse(res, ({
+    statusCode:201, 
+    message:"Notification send to user",
+    data:notification
+  }));
+});
+
