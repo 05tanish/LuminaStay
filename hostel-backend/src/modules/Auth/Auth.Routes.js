@@ -1,6 +1,6 @@
 import { Router } from 'express'
-import { login, logout } from '../../controllers/auth/Auth.Controller.js'
-import { googleLogin } from '../../controllers/auth/GoogleAuth.Controller.js'
+import { login, logout } from './Auth.Controller.js'
+import { googleLogin } from './GoogleAuth.Controller.js'
 
 
 const router = Router()

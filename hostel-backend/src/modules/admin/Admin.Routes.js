@@ -6,7 +6,7 @@ import {
   updateRole,
   broadcastNotification,
   sendUserNotification
-} from "../../controllers/admin/Admin.Controller.js";
+} from "./Admin.Controller.js";
 
 import { authenticate } from "../../middlewares/auth.middleware.js";
 import { authorize } from "../../middlewares/role.middleware.js";
