@@ -6,22 +6,17 @@ import {
     markNotificationRead,
     getUnreadNotifications,
 } from ".Notification.Controller.js"; // Assuming the controller file is named Notification.Controller.js, adjust if necessary
-
+import { authenticate } from "../../middlewares/auth.middleware.js";
+import { authorize } from "../../middlewares/role.middleware.js";
 const router = express.Router();
+// admin
+router.post("/broadcast", authenticate, authorize("ADMIN"), broadcastNotification);
+router.post("/user", authenticate, authorize("ADMIN"), sendUserNotification);
 
-// Route to broadcast a notification to all users
-router.post('/broadcast', broadcastNotification);
-
-// Route to send a notification to a specific user
-router.post('/send', sendUserNotification);
-
-// Route to get notifications for the authenticated user
-router.get('/', getUserNotifications);
-
-// Route to mark a specific notification as read
-router.put('/:id/read', markNotificationRead);
-
+// user
+router.get("/", authenticate, getUserNotifications);
+router.patch("/:id/read", authenticate, markNotificationRead);
 // Route to get unread notifications for the authenticated user
-router.get('/unread', getUnreadNotifications);
+router.get('/unread', authenticate, getUnreadNotifications);
 
 export default router;

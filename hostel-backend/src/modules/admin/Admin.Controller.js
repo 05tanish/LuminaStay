@@ -4,6 +4,7 @@ import { asyncHandler } from "../../utils/AsyncHandler.js";
 import AppError from "../../utils/AppError.js";
 import { successResponse } from "../../utils/ApiResponse.js";
 import { hash_password } from "../../utils/hash.js";
+import { toaddnewuser,deleteUserService,updateroleservice } from "./Admin.Services.js";
 
 
 // Create a new user (admin-only)
@@ -13,45 +14,7 @@ export const addUser = asyncHandler(async (req, res) => {
   if (!name || !email || !phone || !password || !role) {
     throw new AppError("All fields are required", 400);
   }
-
-  const existingEmail = await prisma.user.findUnique({
-    where: { email }
-  });
-
-  if (existingEmail) {
-    throw new AppError("User with this email already exists", 409);
-  }
-
-  const existingPhone = await prisma.user.findUnique({
-    where: { phone }
-  });
-
-  if (existingPhone) {
-    throw new AppError("User with this phone already exists", 409);
-  }
-
-  if (role === "ADMIN" && req.user.role !== "ADMIN") {
-    throw new AppError("You cannot assign ADMIN role", 403);
-  }
-
-  const hashedPassword = await hash_password(password);
-
-  const user = await prisma.user.create({
-    data: {
-      name,
-      email,
-      phone,
-      password: hashedPassword,
-      role
-    },
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      phone: true,
-      role: true
-    }
-  });
+const user = await toaddnewuser(name, email, phone, password, role, req.user.role);
 
   return successResponse(res, {
     statusCode: 201,
@@ -66,12 +29,10 @@ export const deleteUser = asyncHandler(async (req, res) => {
   const { userId } = req.body;
 
   if (!userId) {
-    throw new AppError("UserId is required", 400);
+    throw new AppError("User not found", 400);
   }
 
-  const deletedUser = await prisma.user.delete({
-    where: { id: userId }
-  });
+  const deletedUser = await deleteUserService(userId);
 
   return successResponse(res, {
     statusCode: 200,
@@ -93,18 +54,13 @@ export const updateRole = asyncHandler(async (req, res) => {
   }
 
   if (req.user.id === userId) {
-    throw new AppError("You cannot change your own role", 400);
-  }
-
-  const updatedUser = await prisma.user.update({
-    where: { id: userId },
-    data: { role }
-  });
-
+        throw new AppError("You cannot change your own role", 400);
+      };
+const userupdated = await updateroleservice(userId, role);
   return successResponse(res, {
     statusCode: 200,
     message: "Role updated successfully",
-    data: updatedUser
+    data: userupdated
   });
 });
 
