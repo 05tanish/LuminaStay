@@ -8,8 +8,8 @@ import {
   sendUserNotification
 } from "./Admin.Controller.js";
 
-import { authenticate } from "../../middlewares/auth.middleware.js";
-import { authorize } from "../../middlewares/role.middleware.js";
+import { authenticate } from "../../middlewares/Auth.Middleware.js";
+import { authorize } from "../../middlewares/role.Middleware.js";
 
 const router = Router();
 

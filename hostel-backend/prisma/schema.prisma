@@ -104,6 +104,39 @@ model NotificationRecipient {
   @@index([userId])
 }
 
+model Food {
+  id        String   @id @default(uuid())
+  date      DateTime @unique
+  createdAt DateTime @default(now())
+
+  meals     Meal[]
+}
+
+model Meal {
+  id     String   @id @default(uuid())
+  type   MealType
+  foodId String
+
+  food   Food     @relation(fields: [foodId], references: [id])
+  items  MealItem[]
+
+  @@unique([foodId, type])
+}
+
+model MealItem {
+  id      String @id @default(uuid())
+  name    String
+  mealId  String
+
+  meal    Meal   @relation(fields: [mealId], references: [id])
+}
+
+enum MealType {
+  BREAKFAST
+  LUNCH
+  DINNER
+}
+
 enum Role {
   ADMIN
   USER

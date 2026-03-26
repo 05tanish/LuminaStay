@@ -1,0 +1,63 @@
+import AppError from "../../utils/AppError.js";
+import { asyncHandler } from "../../utils/AsyncHandler.js";
+import { successResponse } from "../../utils/ApiResponse.js";
+
+import {
+  upsertMenuService,
+  getMenuByDateService,
+  createWeeklyMenuService
+} from "..Food/Food.service.js";
+
+
+// DAILY
+export const upsertMenu = asyncHandler(async (req, res) => {
+  const { date, meals } = req.body;
+
+  if (!date || !meals || !Array.isArray(meals)) {
+    throw new AppError("Date and meals are required", 400);
+  }
+
+  const result = await upsertMenuService(date, meals);
+
+  return successResponse(res, {
+    statusCode: 200,
+    message: "Menu updated successfully",
+    data: result
+  });
+});
+
+
+// GET DAILY
+export const getMenu = asyncHandler(async (req, res) => {
+  const { date } = req.query;
+
+  if (!date) {
+    throw new AppError("Date is required", 400);
+  }
+
+  const menu = await getMenuByDateService(date);
+
+  return successResponse(res, {
+    statusCode: 200,
+    message: "Menu fetched successfully",
+    data: menu
+  });
+});
+
+
+// WEEKLY
+export const createWeeklyMenu = asyncHandler(async (req, res) => {
+  const { startDate, menus } = req.body;
+
+  if (!startDate || !menus || !Array.isArray(menus)) {
+    throw new AppError("startDate and menus are required", 400);
+  }
+
+  const result = await createWeeklyMenuService(startDate, menus);
+
+  return successResponse(res, {
+    statusCode: 200,
+    message: "Weekly menu created successfully",
+    data: result
+  });
+});
