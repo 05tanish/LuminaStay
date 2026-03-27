@@ -61,3 +61,19 @@ export const createWeeklyMenu = asyncHandler(async (req, res) => {
     data: result
   });
 });
+
+export const getWeeklyMenu = asyncHandler(async (req, res) => {
+  const { startDate } = req.query;
+
+  if (!startDate) {
+    throw new AppError("startDate is required", 400);
+  }
+
+  const menus = await getWeeklyMenuService(startDate);
+
+  return successResponse(res, {
+    statusCode: 200,
+    message: "Weekly menu fetched successfully",
+    data: menus
+  });
+});

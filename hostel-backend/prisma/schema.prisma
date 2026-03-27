@@ -7,6 +7,16 @@ datasource db {
   provider = "postgresql"
 }
 
+model Hostel {
+  id        String   @id @default(uuid())
+  name      String
+  address   String
+  createdAt DateTime @default(now())
+
+  rooms     Room[]
+  users     User[]
+}
+
 model User {
   id            String   @id @default(uuid())
   name          String
@@ -15,25 +25,35 @@ model User {
   phoneVerified Boolean  @default(false)
   password      String?
   role          Role     @default(USER)
+
+  hostelId      String?
   roomId        String?
+
   createdAt     DateTime @default(now())
 
+  hostel        Hostel?  @relation(fields: [hostelId], references: [id])
+  room          Room?    @relation(fields: [roomId], references: [id])
   bed           Bed?     @relation("UserBed")
+
   complaints    Complaint[]
   monthlyFees   MonthlyFee[]
-  payments      Payment[]
-  room          Room?    @relation(fields: [roomId], references: [id])
-
+  payment      Payment[]
   notificationRecipients NotificationRecipient[]
 }
 
 model Room {
   id        String   @id @default(uuid())
-  roomNo    String   @unique
+  roomNo    String
   capacity  Int
+  hostelId  String
   createdAt DateTime @default(now())
+
+  hostel    Hostel   @relation(fields: [hostelId], references: [id])
+
   beds      Bed[]
   users     User[]
+
+  @@unique([hostelId, roomNo]) // 🔥 IMPORTANT
 }
 
 model Bed {
@@ -41,8 +61,10 @@ model Bed {
   bedNo  String
   roomId String
   userId String? @unique
+
   room   Room    @relation(fields: [roomId], references: [id])
   user   User?   @relation("UserBed", fields: [userId], references: [id])
+
   @@unique([roomId, bedNo])
 }
 
@@ -130,7 +152,7 @@ model MealItem {
 
   meal    Meal   @relation(fields: [mealId], references: [id])
 }
-
+ 
 enum MealType {
   BREAKFAST
   LUNCH

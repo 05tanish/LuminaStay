@@ -108,3 +108,36 @@ export const createWeeklyMenuService = async (startDate, menus) => {
     return { success: true };
   });
 };
+
+export const getWeeklyMenuService = async (startDate) => {
+
+  const start = new Date(startDate);
+
+  const end = new Date(startDate);
+  end.setDate(end.getDate() + 6); // 7 days total
+
+  const menus = await prisma.food.findMany({
+    where: {
+      date: {
+        gte: start,
+        lte: end
+      }
+    },
+    include: {
+      meals: {
+        include: {
+          items: true
+        }
+      }
+    },
+    orderBy: {
+      date: "asc"
+    }
+  });
+
+  if (!menus.length) {
+    throw new AppError("No menu found for this week", 404);
+  }
+
+  return menus;
+};
