@@ -73,10 +73,11 @@ model MonthlyFee {
   userId    String
   month     String
   amount    Int
-  status    PaymentStatus
+  status    PaymentStatus @default(PENDING)
   dueDate   DateTime
   paidAt    DateTime?
   createdAt DateTime      @default(now())
+
   user      User          @relation(fields: [userId], references: [id])
   payment   Payment?
 }
@@ -86,13 +87,26 @@ model Payment {
   userId             String
   monthlyFeeId       String      @unique
   amount             Int
-  mode               PaymentMode
+
+  mode               PaymentMode   // CASH / ONLINE
+
+  // 🔥 Razorpay fields (IMPORTANT)
+  razorpayOrderId    String?
+  razorpayPaymentId  String?
+  razorpaySignature  String?
+
+  // Status tracking
+  status             PaymentStatus @default(PENDING)
+
+  // Manual payment fields
   transactionId      String?
   remarks            String?
   collectedByAdminId String?
-  createdAt          DateTime    @default(now())
-  monthlyFee         MonthlyFee  @relation(fields: [monthlyFeeId], references: [id])
-  user               User        @relation(fields: [userId], references: [id])
+
+  createdAt          DateTime      @default(now())
+
+  user               User          @relation(fields: [userId], references: [id])
+  monthlyFee         MonthlyFee    @relation(fields: [monthlyFeeId], references: [id])
 }
 
 model Complaint {
