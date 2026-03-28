@@ -4,7 +4,13 @@ import AppError from "../../utils/AppError.js";
 
 // Create Room + Auto Create Beds
 export const createRoomService = async (roomNo, capacity, hostelId) => {
+ const hostel = await prisma.hostel.findUnique({
+    where: { id: hostelId }
+  });
 
+  if (!hostel) {
+    throw new AppError("Hostel not found", 404);
+  }
   return await prisma.$transaction(async (tx) => {
 
     // 1️⃣ create room
@@ -31,7 +37,13 @@ export const createRoomService = async (roomNo, capacity, hostelId) => {
 
 // Get all rooms with occupancy
 export const getRoomsService = async (hostelId) => {
+const hostel = await prisma.hostel.findUnique({
+    where: { id: hostelId }
+  });
 
+  if (!hostel) {
+    throw new AppError("Hostel not found", 404);
+  }
   const rooms = await prisma.room.findMany({
     where: { hostelId },
     include: {
@@ -58,7 +70,13 @@ export const getRoomsService = async (hostelId) => {
 
 // Assign bed to user
 export const assignBedService = async (userId, bedId) => {
+const user = await prisma.user.findUnique({
+    where: { id: userId }
+  });
 
+  if (!user) {
+    throw new AppError("User not found", 404);
+  }
   const bed = await prisma.bed.findUnique({
     where: { id: bedId }
   });

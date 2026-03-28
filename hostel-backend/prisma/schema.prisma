@@ -152,7 +152,45 @@ model MealItem {
 
   meal    Meal   @relation(fields: [mealId], references: [id])
 }
- 
+
+
+model UserHostel {
+  id        String   @id @default(uuid())
+  userId    String
+  hostelId  String
+  role      HostelRole
+
+  user      User     @relation(fields: [userId], references: [id])
+  hostel    Hostel   @relation(fields: [hostelId], references: [id])
+
+  @@unique([userId, hostelId])
+}
+model OTP {
+  id        String   @id @default(uuid())
+  phone     String
+  code      String
+  expiresAt DateTime
+  verified  Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+enum InviteType {
+  EMAIL
+  OPEN
+}
+
+model Invite {
+  id        String      @id @default(uuid())
+  email     String?
+  code      String      @unique
+  role      HostelRole
+  type      InviteType
+  hostelId  String
+  expiresAt DateTime
+  used      Boolean     @default(false)
+  createdAt DateTime    @default(now())
+
+  hostel    Hostel      @relation(fields: [hostelId], references: [id])
+}
 enum MealType {
   BREAKFAST
   LUNCH
@@ -160,9 +198,12 @@ enum MealType {
 }
 
 enum Role {
+  SUPER_ADMIN
   ADMIN
+  STAFF
   USER
 }
+
 
 enum PaymentStatus {
   PAID
