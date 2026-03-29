@@ -1,10 +1,8 @@
 // Admin controller — handles admin-only operations like user creation
-import { prisma } from "../../config/db.js";
-import { asyncHandler } from "../../utils/AsyncHandler.js";
+import { asyncHandler } from "../../utils/asyncHandler.js";
 import AppError from "../../utils/AppError.js";
 import { successResponse } from "../../utils/ApiResponse.js";
-import { hash_password } from "../../utils/hash.js";
-import { toaddnewuser,deleteUserService,updateroleservice } from "./Admin.Services.js";
+import { toaddnewuser, deleteUserService, updateroleservice } from "../admin/Admin.Services.js";
 
 
 // Create a new user (admin-only)
@@ -14,7 +12,7 @@ export const addUser = asyncHandler(async (req, res) => {
   if (!name || !email || !phone || !password || !role) {
     throw new AppError("All fields are required", 400);
   }
-const user = await toaddnewuser(name, email, phone, password, role, req.user.role);
+  const user = await toaddnewuser(name, email, phone, password, role, req.user.role);
 
   return successResponse(res, {
     statusCode: 201,
@@ -54,9 +52,9 @@ export const updateRole = asyncHandler(async (req, res) => {
   }
 
   if (req.user.id === userId) {
-        throw new AppError("You cannot change your own role", 400);
-      };
-const userupdated = await updateroleservice(userId, role);
+    throw new AppError("You cannot change your own role", 400);
+  };
+  const userupdated = await updateroleservice(userId, role);
   return successResponse(res, {
     statusCode: 200,
     message: "Role updated successfully",

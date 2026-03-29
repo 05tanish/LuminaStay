@@ -8,15 +8,15 @@ import {
   deleteHostel
 } from "../Hostel/Hostel.Controller.js";
 
-import { authenticate } from "../../middlewares/auth.middleware.js";
-import { authorize } from "../../middlewares/role.middleware.js";
+import { protect } from "../../middleware/Authentification.Middleware.js";
+import { authorize } from "../../middleware/authorization.Middleware.js";
 
 const router = Router();
 
-router.post("/", authenticate, authorize("ADMIN"), createHostel);
-router.get("/", authenticate, getHostels);
-router.get("/:id", authenticate, getHostelById);
-router.put("/:id", authenticate, authorize("ADMIN"), updateHostel);
-router.delete("/:id", authenticate, authorize("ADMIN"), deleteHostel);
+router.post("/", protect, authorize("ADMIN"), createHostel);
+router.get("/", protect, getHostels);
+router.get("/:id", protect, getHostelById);
+router.put("/:id", protect, authorize("ADMIN"), updateHostel);
+router.delete("/:id", protect, authorize("ADMIN"), deleteHostel);
 
 export default router;

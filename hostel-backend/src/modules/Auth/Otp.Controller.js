@@ -1,7 +1,7 @@
- import {asyncHandler} from "../../utils/asyncHandler.js";
+import { asyncHandler } from "../../utils/asyncHandler.js";
 import AppError from "../../utils/AppError.js";
-import { sendOtpService } from "./Sendotp.Service.js";
-import { successResponse } from "../../utils/response.js";
+import { successResponse } from "../../utils/ApiResponse.js";
+import { sendOtpService } from "../Auth/Sendotp.Service.js";
 
 export const sendOtp = asyncHandler(async (req, res) => {
   const { phone } = req.body;

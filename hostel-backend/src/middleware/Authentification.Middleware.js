@@ -1,7 +1,7 @@
 // Authentication middleware — verifies if user session token is valid
 import { prisma } from "../config/db.js";
 import AppError from "../utils/AppError.js";
-import { asyncHandler } from '../utils/AsyncHandler.js'
+import { asyncHandler } from "../utils/asyncHandler.js";
 import { verifyToken } from "../utils/jwt.js";
 
 // Protects routes by checking the 'token' cookie

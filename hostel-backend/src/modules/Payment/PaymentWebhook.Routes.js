@@ -1,15 +1,16 @@
-// app.js / server.js
-
 import express from "express";
+import {
+  razorpayWebhook
+} from "./PaymentWebhook.Controller";
 
-const app = express();
+const router = express.Router();
 
 // ❗ ONLY for webhook route
-app.post(
+router.post(
   "/webhook/razorpay",
   express.raw({ type: "application/json" }),
   razorpayWebhook
 );
 
 // Normal routes
-app.use(express.json());
+router.use(express.json());

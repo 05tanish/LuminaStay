@@ -1,4 +1,4 @@
-    import { Router } from "express";
+import { Router } from "express";
 
 import {
   createRoom,
@@ -7,15 +7,15 @@ import {
   vacateBed
 } from "../Rooms/Room.Controller.js";
 
-import { authenticate } from "../../middlewares/auth.middleware.js";
-import { authorize } from "../../middlewares/role.middleware.js";
+import { protect } from "../../middleware/Authentification.Middleware.js";
+import { authorize } from "../../middleware/authorization.Middleware.js";
 
 const router = Router();
 
-router.post("/", authenticate, authorize("ADMIN"), createRoom);
-router.get("/", authenticate, getRooms);
+router.post("/", protect, authorize("Admin"), createRoom);
+router.get("/", protect, getRooms);
 
-router.post("/assign-bed", authenticate, authorize("ADMIN"), assignBed);
-router.post("/vacate-bed", authenticate, authorize("ADMIN"), vacateBed);
+router.post("/assign-bed", protect, authorize("Admin"), assignBed);
+router.post("/vacate-bed", protect, authorize("Admin"), vacateBed);
 
 export default router;

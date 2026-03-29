@@ -2,18 +2,16 @@ import { Router } from "express";
 
 import { getMe } from "./User.Controller.js";
 import {
-  getUserNotifications,
-  markNotificationRead
-} from "../../controllers/user/Notification.Controller.js";
+   getUserNotifications,
+   markNotificationRead
+} from "../Notification/Notification.Controller.js";
 
-import { authenticate } from "../../middlewares/auth.middleware.js";
+import { protect } from "../../middleware/Authentification.Middleware.js";
 
 const router = Router();
 
-/*
-  All user routes require authentication
-*/
-router.use(authenticate);
+
+router.use(protect);
 
 /* ==============================
    USER PROFILE

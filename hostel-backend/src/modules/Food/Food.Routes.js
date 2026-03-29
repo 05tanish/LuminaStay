@@ -5,19 +5,19 @@ import {
   getMenu,
   createWeeklyMenu,
   getWeeklyMenu
-} from "..Food/Food.Controller.js";
+} from "../Food/Food.Controller.js";
 
-import { authenticate } from "../../middlewares/auth.middleware.js";
-import { authorize } from "../../middlewares/role.middleware.js";
+import { protect } from "../../middleware/Authentification.Middleware.js";
+import { authorize } from "../../middleware/authorization.Middleware.js";
 
 const router = Router();
 
 // DAILY
-router.post("/menu", authenticate, authorize("ADMIN"), upsertMenu);
-router.get("/menu", authenticate, getMenu);
+router.post("/menu", protect, authorize("ADMIN"), upsertMenu);
+router.get("/menu", protect, getMenu);
 
 // WEEKLY
-router.post("/menu/weekly", authenticate, authorize("ADMIN"), createWeeklyMenu);
-router.get("/menu/weekly", authenticate, getWeeklyMenu);
+router.post("/menu/weekly", protect, authorize("ADMIN"), createWeeklyMenu);
+router.get("/menu/weekly", protect, getWeeklyMenu);
 
 export default router;

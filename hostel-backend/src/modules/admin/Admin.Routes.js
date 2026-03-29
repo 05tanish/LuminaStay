@@ -1,23 +1,17 @@
 import { Router } from "express";
 
 import {
-  addUser,
-  deleteUser,
-  updateRole,
-  broadcastNotification,
-  sendUserNotification
-} from "./Admin.Controller.js";
+   addUser,
+   deleteUser,
+   updateRole,
+} from "../admin/Admin.Controller.js";
 
-import { authenticate } from "../../middlewares/Auth.Middleware.js";
-import { authorize } from "../../middlewares/role.Middleware.js";
+import { authenticate } from "../../middlewares/Authentification.Middleware.js";
+import { authorize } from "../../middlewares/authorization.Middleware.js";
 
 const router = Router();
 
-/*
-  All admin routes should pass through:
-  1. Authentication
-  2. Authorization (ADMIN only)
-*/
+
 router.use(authenticate);
 router.use(authorize("ADMIN"));
 

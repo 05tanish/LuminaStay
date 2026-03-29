@@ -1,5 +1,5 @@
 import asyncHandler from "../../utils/asyncHandler.js";
-import { verifyWebhookService } from "../services/payment.service.js";
+import { verifyWebhookService } from "../Payment/PaymentWebhook.Service.js";
 
 export const razorpayWebhook = asyncHandler(async (req, res) => {
   const signature = req.headers["x-razorpay-signature"];

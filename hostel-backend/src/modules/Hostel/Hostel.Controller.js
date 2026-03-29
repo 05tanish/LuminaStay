@@ -8,7 +8,7 @@ import {
   getHostelByIdService,
   updateHostelService,
   deleteHostelService
-} from "..Hostel/Hostel.Service.js";
+} from "../Hostel/Hostel.Service.js";
 
 
 // Create Hostel

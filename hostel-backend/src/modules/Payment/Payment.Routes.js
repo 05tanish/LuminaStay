@@ -1,16 +1,22 @@
 import { Router } from "express";
-import { createOrder } from "..Payment/Payment.Controller.js";
-import { authenticate } from "../../middlewares/auth.js";
-
+import { protect } from "../../middleware/Authentification.Middleware.js";
+import { authorize } from "../../middleware/authorization.Middleware.js";
+import {
+    razorpayWebhook,
+    getUserPayments,
+    getAllPayments,
+    cashPayment,
+    createOrder
+} from "../Payment/PaymentWebhook.Controller.js";
 const router = Router();
-router.post("/create-order", authenticate, createOrder);
+router.post("/create-order", protect, createOrder);
 router.post("/webhook", razorpayWebhook);
 app.use("/api/payment/webhook", express.raw({ type: "application/json" }));
-router.post("/cash", authenticate, authorizeAdmin, cashPayment);
+router.post("/cash", protect, authorize("Admin"), cashPayment);
 
-router.get("/my-payments", authenticate, getUserPayments);
+router.get("/my-payments", protect, getUserPayments);
 
-router.get("/all", authenticate, authorizeAdmin, getAllPayments);
+router.get("/all", protect, authorize("Admin"), getAllPayments);
 
 
 export default router;

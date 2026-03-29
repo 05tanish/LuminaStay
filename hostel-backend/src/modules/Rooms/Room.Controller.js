@@ -1,6 +1,6 @@
 import { asyncHandler } from "../../utils/AsyncHandler.js";
 import { successResponse } from "../../utils/ApiResponse.js";
-import {AppError }from "../../utils/AppError.js";
+import AppError from "../../utils/AppError.js";
 
 import {
   createRoomService,

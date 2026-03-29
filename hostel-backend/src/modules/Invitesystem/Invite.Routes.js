@@ -6,13 +6,13 @@ import {
   registerWithInvite
 } from "../Invitesystem/Invite.controller.js";
 
-import { authenticate } from "../../middlewares/auth.middleware.js";
-import { authorize } from "../../middlewares/role.middleware.js";
+import { protect } from "../../middleware/Authentification.Middleware.js";
+import { authorize } from "../../middleware/authorization.Middleware.js";
 
 const router = Router();
 
 // Admin
-router.post("/", authenticate, authorize("ADMIN"), createInvite);
+router.post("/", protect, authorize("ADMIN"), createInvite);
 
 // Public
 router.get("/:code", validateInvite);
