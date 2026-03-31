@@ -3,47 +3,54 @@ import AppError from "../../utils/AppError.js";
 
 export const createHostelService = async (name, address) => {
   const existing = await prisma.hostel.findFirst({
-    where: {
-      address
-    }
+    where: { address }
   });
 
   if (existing) {
     throw new AppError("Hostel with same address already exists", 400);
   }
 
-    const hostel = await prisma.hostel.create({
-    data: {
-      name,
-      address
-    },
+  const hostel = await prisma.hostel.create({
+    data: { name, address },
     select: {
       id: true,
       name: true,
       address: true
     }
   });
-    return hostel;
+  return hostel;
 };
 
 
-export const getAllHostelsService = async () => {
-   const hostelchecks = await prisma.hostel.findMany({
-    include: {
-      rooms: true,
-      users: true
+//  Added pagination and removed the 404 throw for empty results —
+// an empty list is a valid response, not an error
+export const getAllHostelsService = async (page = 1, limit = 20) => {
+  const skip = (page - 1) * limit;
+
+  const [hostels, total] = await Promise.all([
+    prisma.hostel.findMany({
+      include: {
+        rooms: true,
+        _count: {
+          select: { users: true }
+        }
+      },
+      skip,
+      take: limit,
+      orderBy: { createdAt: "desc" }
+    }),
+    prisma.hostel.count()
+  ]);
+
+  return {
+    hostels,
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit)
     }
-  });
-  if (!hostelchecks || hostelchecks.length === 0) {
-    throw new AppError("No hostels found", 404);
-  }
-    const hostels = await prisma.hostel.findMany({
-    include: {
-      rooms: true,
-      users: true
-    }
-  });
-  return hostels;
+  };
 };
 
 
@@ -51,8 +58,14 @@ export const getHostelByIdService = async (id) => {
   const hostel = await prisma.hostel.findUnique({
     where: { id },
     include: {
-      rooms: true,
-      users: true
+      rooms: {
+        include: {
+          beds: true
+        }
+      },
+      _count: {
+        select: { users: true }
+      }
     }
   });
 
@@ -72,9 +85,16 @@ export const updateHostelService = async (id, data) => {
   if (!hostel) {
     throw new AppError("Hostel not found", 404);
   }
-    const updatedHostel = await prisma.hostel.update({
+
+  //  Only allow updating name and address — prevents arbitrary field injection
+  const { name, address } = data;
+  const updateData = {};
+  if (name) updateData.name = name;
+  if (address) updateData.address = address;
+
+  const updatedHostel = await prisma.hostel.update({
     where: { id },
-    data
+    data: updateData
   });
   return updatedHostel;
 };

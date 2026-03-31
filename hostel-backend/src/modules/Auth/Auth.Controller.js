@@ -1,49 +1,45 @@
 // Authentication controller — handles login and logout
 import { compare_password } from '../../utils/hash.js'
-import { signToken } from '../../utils/jwt.js'
 import { asyncHandler } from '../../utils/AsyncHandler.js'
 import AppError from '../../utils/AppError.js'
 import { successResponse } from '../../utils/ApiResponse.js'
 import { prisma } from '../../config/db.js'
+import { logger } from '../../utils/logger.js'
+import { setAuthCookies, clearAuthCookies } from '../../utils/tokenHelpers.js'
 
-// Login with email and password, sets an httpOnly JWT cookie
+// Login with email and password — sets httpOnly access + refresh token cookies
 export const login = asyncHandler(async (req, res) => {
     const { email, password } = req.body;
 
-    // Ensure both fields are provided
     if (!email || !password) {
         throw new AppError("All fields are required", 400);
     }
 
-    // Look up the user by email
     const user = await prisma.user.findUnique({
         where: { email }
     });
 
+    // Use generic message for both "not found" and "wrong password"
+    // to prevent user enumeration attacks
     if (!user) {
-        throw new AppError("User not found", 400);
+        throw new AppError("Invalid email or password", 401);
     }
 
-    // Verify the password against the stored hash
+    // If user registered via Google OAuth, they don't have a password
+    if (!user.password) {
+        throw new AppError("Please login using Google", 400);
+    }
+
     const ismatch = await compare_password(password, user.password);
 
     if (!ismatch) {
-        throw new AppError("Password does not match", 400);
+        throw new AppError("Invalid email or password", 401);
     }
 
-    // Generate a signed JWT containing user id and role
-    const token = signToken({
-        id: user.id,
-        role: user.role
-    });
+    // Issue access + refresh tokens and set cookies
+    await setAuthCookies(res, user);
 
-    // Set the token as an httpOnly cookie (7 day expiry)
-    res.cookie('token', token, {
-        httpOnly: true,
-        secure: false, // set to true in production (HTTPS)
-        sameSite: 'strict',
-        maxAge: 7 * 24 * 60 * 60 * 1000
-    });
+    logger.info("User logged in", { userId: user.id, email: user.email });
 
     return successResponse(res, {
         statusCode: 200,
@@ -57,13 +53,18 @@ export const login = asyncHandler(async (req, res) => {
     });
 });
 
-// Logout — clears the JWT cookie
+// Logout — clears both cookies and invalidates refresh token in Redis
 export const logout = asyncHandler(async (req, res) => {
-    // Overwrite the token cookie with empty value and expire it
-    res.cookie('token', '', {
-        httpOnly: true,
-        expires: new Date(0)
-    });
+    // req.user may not exist if token is already expired, but we still clear cookies
+    const userId = req.user?.id;
+
+    if (userId) {
+        await clearAuthCookies(res, userId);
+    } else {
+        // Clear cookies even without a valid user session
+        res.cookie('accessToken', '', { httpOnly: true, expires: new Date(0) });
+        res.cookie('refreshToken', '', { httpOnly: true, expires: new Date(0) });
+    }
 
     return successResponse(res, {
         statusCode: 200,

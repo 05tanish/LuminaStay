@@ -1,70 +1,70 @@
 import { prisma } from "../../config/db.js";
 import AppError from "../../utils/AppError.js";
 
-export const upsertMenuService = async (date, meals) => {
-  return await prisma.$transaction(async (tx) => {
+export const upsertMenuService = async (date, meals, tx = null) => {
 
-    // Validate meal types
-    const allowedTypes = ["BREAKFAST", "LUNCH", "DINNER"];
-    for (const meal of meals) {
-      if (!allowedTypes.includes(meal.type)) {
-        throw new AppError(`Invalid meal type: ${meal.type}`, 400);
-      }
+  const db = tx || prisma;
+
+  const allowedTypes = ["BREAKFAST", "LUNCH", "DINNER"];
+
+  for (const meal of meals) {
+    if (!allowedTypes.includes(meal.type)) {
+      throw new AppError(`Invalid meal type: ${meal.type}`, 400);
     }
+  }
 
-    // 1️⃣ create or get food
-    const food = await tx.food.upsert({
-      where: { date: new Date(date) },
-      update: {},
-      create: { date: new Date(date) }
-    });
-
-    const incomingTypes = meals.map(m => m.type);
-
-    // 2️⃣ delete removed meals
-    await tx.meal.deleteMany({
-      where: {
-        foodId: food.id,
-        NOT: {
-          type: { in: incomingTypes }
-        }
-      }
-    });
-
-    // 3️⃣ upsert meals + items
-    for (const meal of meals) {
-
-      const upsertedMeal = await tx.meal.upsert({
-        where: {
-          foodId_type: {
-            foodId: food.id,
-            type: meal.type
-          }
-        },
-        update: {},
-        create: {
-          type: meal.type,
-          foodId: food.id
-        }
-      });
-
-      // replace items
-      await tx.mealItem.deleteMany({
-        where: { mealId: upsertedMeal.id }
-      });
-
-      await tx.mealItem.createMany({
-        data: meal.items.map(item => ({
-          name: item,
-          mealId: upsertedMeal.id
-        }))
-      });
-    }
-
-    return food;
+  const food = await db.food.upsert({
+    where: { date: new Date(date) },
+    update: {},
+    create: { date: new Date(date) }
   });
-};
 
+  const incomingTypes = meals.map(m => m.type);
+
+  await db.meal.deleteMany({
+    where: {
+      foodId: food.id,
+      NOT: {
+        type: { in: incomingTypes }
+      }
+    }
+  });
+
+  for (const meal of meals) {
+
+    const upsertedMeal = await db.meal.upsert({
+      where: {
+        foodId_type: {
+          foodId: food.id,
+          type: meal.type
+        }
+      },
+      update: {},
+      create: {
+        type: meal.type,
+        foodId: food.id
+      }
+    });
+
+    await db.mealItem.deleteMany({
+      where: { mealId: upsertedMeal.id }
+    });
+
+    //  Validate that items array exists and is not empty
+    if (!meal.items || !Array.isArray(meal.items) || meal.items.length === 0) {
+      throw new AppError(`Meal ${meal.type} must have at least one item`, 400);
+    }
+
+    await db.mealItem.createMany({
+      data: meal.items.map(item => ({
+        name: item,
+        mealId: upsertedMeal.id
+      }))
+    });
+  }
+
+  return food;
+};
 
 // Get menu by date
 export const getMenuByDateService = async (date) => {

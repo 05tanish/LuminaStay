@@ -1,4 +1,5 @@
-import { asyncHandler } from "../../utils/asyncHandler.js";
+//  Added pagination params to list controllers
+import { asyncHandler } from "../../utils/AsyncHandler.js";
 import { successResponse } from "../../utils/ApiResponse.js";
 import AppError from "../../utils/AppError.js";
 import {
@@ -6,15 +7,16 @@ import {
   cashPaymentService,
   getUserPaymentHistoryService,
   getAllPaymentsService,
-
-} from "../Payment/Payment.Service.js";
-
+} from "./Payment.Service.js";
 
 
 
 export const createOrder = asyncHandler(async (req, res) => {
-
   const { monthlyFeeId } = req.body;
+
+  if (!monthlyFeeId) {
+    throw new AppError("monthlyFeeId is required", 400);
+  }
 
   const order = await createOrderService({
     userId: req.user.id,
@@ -27,8 +29,8 @@ export const createOrder = asyncHandler(async (req, res) => {
     data: order
   });
 });
-export const cashPayment = asyncHandler(async (req, res) => {
 
+export const cashPayment = asyncHandler(async (req, res) => {
   const { userId, monthlyFeeId, remarks } = req.body;
 
   if (!userId || !monthlyFeeId) {
@@ -47,23 +49,31 @@ export const cashPayment = asyncHandler(async (req, res) => {
     message: "Cash payment recorded successfully"
   });
 });
-export const getUserPayments = asyncHandler(async (req, res) => {
 
-  const payments = await getUserPaymentHistoryService(req.user.id);
+// Added pagination support
+export const getUserPayments = asyncHandler(async (req, res) => {
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 20;
+
+  const result = await getUserPaymentHistoryService(req.user.id, page, limit);
 
   return successResponse(res, {
     statusCode: 200,
     message: "Payment history fetched",
-    data: payments
+    data: result
   });
 });
-export const getAllPayments = asyncHandler(async (req, res) => {
 
-  const payments = await getAllPaymentsService();
+//  Added pagination support
+export const getAllPayments = asyncHandler(async (req, res) => {
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 20;
+
+  const result = await getAllPaymentsService(page, limit);
 
   return successResponse(res, {
     statusCode: 200,
     message: "All payments fetched",
-    data: payments
+    data: result
   });
 });

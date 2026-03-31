@@ -8,7 +8,7 @@ import {
   getHostelByIdService,
   updateHostelService,
   deleteHostelService
-} from "../Hostel/Hostel.Service.js";
+} from "./Hostel.Service.js";
 
 
 // Create Hostel
@@ -29,14 +29,17 @@ export const createHostel = asyncHandler(async (req, res) => {
 });
 
 
-// Get all hostels
+// Get all hostels — [REVIEW] Added pagination
 export const getHostels = asyncHandler(async (req, res) => {
-  const hostels = await getAllHostelsService();
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 20;
+
+  const result = await getAllHostelsService(page, limit);
 
   return successResponse(res, {
     statusCode: 200,
     message: "Hostels fetched successfully",
-    data: hostels
+    data: result
   });
 });
 

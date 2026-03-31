@@ -1,12 +1,13 @@
 // Admin controller — handles admin-only operations like user creation
-import { asyncHandler } from "../../utils/asyncHandler.js";
+import { asyncHandler } from "../../utils/AsyncHandler.js";
 import AppError from "../../utils/AppError.js";
 import { successResponse } from "../../utils/ApiResponse.js";
-import { toaddnewuser, deleteUserService, updateroleservice } from "../admin/Admin.Services.js";
+import { toaddnewuser, deleteUserService, updateroleservice } from "./Admin.Services.js";
 
 
 // Create a new user (admin-only)
 export const addUser = asyncHandler(async (req, res) => {
+  //  Validation will be handled by Zod middleware
   const { name, email, phone, password, role } = req.body;
 
   if (!name || !email || !phone || !password || !role) {
@@ -24,13 +25,13 @@ export const addUser = asyncHandler(async (req, res) => {
 
 // Delete user
 export const deleteUser = asyncHandler(async (req, res) => {
-  const { userId } = req.body;
+  const { userId } = req.params;
 
   if (!userId) {
-    throw new AppError("User not found", 400);
+    throw new AppError("UserId is required", 400);
   }
 
-  const deletedUser = await deleteUserService(userId);
+  const deletedUser = await deleteUserService(req.user, userId);
 
   return successResponse(res, {
     statusCode: 200,
@@ -45,7 +46,8 @@ export const deleteUser = asyncHandler(async (req, res) => {
 
 // Update user role
 export const updateRole = asyncHandler(async (req, res) => {
-  const { userId, role } = req.body;
+  const { role } = req.body;
+  const { userId } = req.params;
 
   if (!userId || !role) {
     throw new AppError("Fields cannot be empty", 400);
@@ -53,14 +55,12 @@ export const updateRole = asyncHandler(async (req, res) => {
 
   if (req.user.id === userId) {
     throw new AppError("You cannot change your own role", 400);
-  };
-  const userupdated = await updateroleservice(userId, role);
+  }
+
+  const userupdated = await updateroleservice(userId, role, req.user);
   return successResponse(res, {
     statusCode: 200,
     message: "Role updated successfully",
     data: userupdated
   });
 });
-
-
-

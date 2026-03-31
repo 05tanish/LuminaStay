@@ -1,15 +1,15 @@
-// Google OAuth login controller — verifies Google ID token and issues JWT
+// Google OAuth login controller — verifies Google ID token and issues JWT pair
 import { OAuth2Client } from 'google-auth-library'
 import { prisma } from '../../config/db.js'
 import { asyncHandler } from '../../utils/AsyncHandler.js'
 import AppError from "../../utils/AppError.js"
-import { signToken } from '../../utils/jwt.js'
 import { successResponse } from '../../utils/ApiResponse.js'
+import { GOOGLE_CLIENT_ID } from '../../config/env.js'
+import { logger } from '../../utils/logger.js'
+import { setAuthCookies } from '../../utils/tokenHelpers.js'
 
-// Initialize Google OAuth2 client with the client ID from env
-const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID)
+const client = new OAuth2Client(GOOGLE_CLIENT_ID)
 
-// Verify Google token, look up existing user, and issue a JWT cookie
 export const googleLogin = asyncHandler(async (req, res) => {
   const { token } = req.body;
 
@@ -17,16 +17,14 @@ export const googleLogin = asyncHandler(async (req, res) => {
     throw new AppError("Google token not found", 400);
   }
 
-  // Verify the Google ID token and extract the payload
   const ticket = await client.verifyIdToken({
     idToken: token,
-    audience: process.env.GOOGLE_CLIENT_ID
+    audience: GOOGLE_CLIENT_ID
   })
 
   const payload = ticket.getPayload();
   const email = payload.email
 
-  // Check if this Google user exists in our database
   const user = await prisma.user.findUnique({
     where: { email }
   })
@@ -35,19 +33,10 @@ export const googleLogin = asyncHandler(async (req, res) => {
     throw new AppError("User not allowed. Contact admin.", 403);
   }
 
-  // Generate a JWT for the authenticated user
-  const jwtToken = signToken({
-    id: user.id,
-    role: user.role
-  })
+  // Issue access + refresh tokens and set cookies
+  await setAuthCookies(res, user);
 
-  // Set the JWT (not the Google token) as an httpOnly cookie
-  res.cookie('token', jwtToken, {
-    httpOnly: true,
-    secure: false, // set to true in production (HTTPS)
-    sameSite: 'strict',
-    maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-  })
+  logger.info("Google login successful", { userId: user.id, email: user.email });
 
   return successResponse(res, {
     statusCode: 200,

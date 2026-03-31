@@ -47,16 +47,18 @@ export const sendUserNotification = asyncHandler(async (req, res) => {
 });
 
 
-// Get user notifications
+// Get user notifications — Added pagination support
 export const getUserNotifications = asyncHandler(async (req, res) => {
   const userId = req.user.id;
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 20;
 
-  const notifications = await getUserNotificationsService(userId);
+  const result = await getUserNotificationsService(userId, page, limit);
 
   return successResponse(res, {
     statusCode: 200,
     message: "Notifications fetched successfully",
-    data: notifications
+    data: result
   });
 });
 
@@ -64,8 +66,10 @@ export const getUserNotifications = asyncHandler(async (req, res) => {
 // Mark as read
 export const markNotificationRead = asyncHandler(async (req, res) => {
   const { id } = req.params;
+  const userId = req.user.id;
 
-  const notification = await markAsRead(id);
+  //  Pass userId to verify ownership
+  const notification = await markAsRead(id, userId);
 
   return successResponse(res, {
     statusCode: 200,
@@ -75,15 +79,17 @@ export const markNotificationRead = asyncHandler(async (req, res) => {
 });
 
 
-// Get unread notifications
+// Get unread notifications — [REVIEW] Added pagination support
 export const getUnreadNotifications = asyncHandler(async (req, res) => {
   const userId = req.user.id;
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 20;
 
-  const notifications = await getUnreadNotificationsService(userId);
+  const result = await getUnreadNotificationsService(userId, page, limit);
 
   return successResponse(res, {
     statusCode: 200,
     message: "Unread notifications fetched",
-    data: notifications
+    data: result
   });
 });

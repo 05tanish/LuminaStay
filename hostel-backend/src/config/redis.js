@@ -1,7 +1,7 @@
 import Redis from "ioredis";
 
-export const redis = new Redis(process.env.REDIS_URL, {
-  tls: {} // required for Upstash (secure connection)
+export const redis = new Redis(process.env.UPSTASH_REDIS_REST_URL, {
+  tls: {}
 });
 
 // Optional: debug

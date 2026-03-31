@@ -15,6 +15,8 @@ model Hostel {
 
   rooms     Room[]
   users     User[]
+  userHostels UserHostel[]
+  invites   Invite[]
 }
 
 model User {
@@ -39,6 +41,7 @@ model User {
   monthlyFees   MonthlyFee[]
   payment      Payment[]
   notificationRecipients NotificationRecipient[]
+  userHostels UserHostel[]
 }
 
 model Room {
@@ -80,6 +83,8 @@ model MonthlyFee {
 
   user      User          @relation(fields: [userId], references: [id])
   payment   Payment?
+
+  @@index([userId])
 }
 
 model Payment {
@@ -107,15 +112,20 @@ model Payment {
 
   user               User          @relation(fields: [userId], references: [id])
   monthlyFee         MonthlyFee    @relation(fields: [monthlyFeeId], references: [id])
+
+  @@index([userId])
 }
 
 model Complaint {
   id        String          @id @default(uuid())
-  message   String
+  title     String
+  description   String
   status    ComplaintStatus @default(OPEN)
   userId    String
   createdAt DateTime        @default(now())
   user      User            @relation(fields: [userId], references: [id])
+
+  @@index([userId])
 }
 
 model Notification {
@@ -165,6 +175,8 @@ model MealItem {
   mealId  String
 
   meal    Meal   @relation(fields: [mealId], references: [id])
+
+  @@index([mealId])
 }
 
 
@@ -178,6 +190,7 @@ model UserHostel {
   hostel    Hostel   @relation(fields: [hostelId], references: [id])
 
   @@unique([userId, hostelId])
+  @@index([hostelId])
 }
 model OTP {
   id        String   @id @default(uuid())
@@ -186,6 +199,8 @@ model OTP {
   expiresAt DateTime
   verified  Boolean  @default(false)
   createdAt DateTime @default(now())
+
+  @@index([phone])
 }
 enum InviteType {
   EMAIL
@@ -204,6 +219,9 @@ model Invite {
   createdAt DateTime    @default(now())
 
   hostel    Hostel      @relation(fields: [hostelId], references: [id])
+
+  @@index([hostelId])
+  @@index([email])
 }
 enum MealType {
   BREAKFAST
@@ -216,6 +234,12 @@ enum Role {
   ADMIN
   STAFF
   USER
+}
+
+enum HostelRole {
+  ADMIN
+  STAFF
+  STUDENT
 }
 
 
