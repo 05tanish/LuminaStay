@@ -31,3 +31,18 @@ export const getMe = asyncHandler(async (req, res) => {
     });
 });
 
+// Returns the current user's monthly fees & dues
+export const getUserFees = asyncHandler(async (req, res) => {
+    const { getUserMonthlyFeesService } = await import("../admin/Admin.Services.js");
+
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+
+    const result = await getUserMonthlyFeesService(req.user.id, page, limit);
+
+    return successResponse(res, {
+        statusCode: 200,
+        message: "Monthly fees fetched successfully",
+        data: result
+    });
+});

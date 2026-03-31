@@ -2,7 +2,63 @@
 import { asyncHandler } from "../../utils/AsyncHandler.js";
 import AppError from "../../utils/AppError.js";
 import { successResponse } from "../../utils/ApiResponse.js";
-import { toaddnewuser, deleteUserService, updateroleservice } from "./Admin.Services.js";
+import {
+  toaddnewuser,
+  deleteUserService,
+  updateroleservice,
+  getUsersService,
+  createMonthlyFeeService,
+  getMonthlyFeesService,
+  getUserMonthlyFeesService,
+} from "./Admin.Services.js";
+
+
+
+export const getUsers = asyncHandler(async (req, res) => {
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 20;
+  const search = req.query.search || "";
+
+  const result = await getUsersService(page, limit, search);
+
+  return successResponse(res, {
+    statusCode: 200,
+    message: "Users fetched successfully",
+    data: result,
+  });
+});
+
+
+export const createMonthlyFee = asyncHandler(async (req, res) => {
+  const { userId, month, amount, dueDate } = req.body;
+
+  if (!userId || !month || !amount || !dueDate) {
+    throw new AppError("userId, month, amount, and dueDate are required", 400);
+  }
+
+  const fee = await createMonthlyFeeService({ userId, month, amount, dueDate });
+
+  return successResponse(res, {
+    statusCode: 201,
+    message: "Monthly fee created successfully",
+    data: fee,
+  });
+});
+
+
+export const getMonthlyFees = asyncHandler(async (req, res) => {
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 20;
+  const { userId, status, month } = req.query;
+
+  const result = await getMonthlyFeesService(page, limit, { userId, status, month });
+
+  return successResponse(res, {
+    statusCode: 200,
+    message: "Monthly fees fetched successfully",
+    data: result,
+  });
+});
 
 
 // Create a new user (admin-only)

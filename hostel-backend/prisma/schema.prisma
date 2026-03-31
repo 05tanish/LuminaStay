@@ -232,13 +232,11 @@ enum MealType {
 enum Role {
   SUPER_ADMIN
   ADMIN
-  STAFF
   USER
 }
 
 enum HostelRole {
   ADMIN
-  STAFF
   STUDENT
 }
 

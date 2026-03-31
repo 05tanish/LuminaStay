@@ -8,6 +8,133 @@ const ROLE_LEVELS = {
   USER: 1
 };
 
+
+export const getUsersService = async (page = 1, limit = 20, search = "") => {
+  const skip = (page - 1) * limit;
+
+  const where = search
+    ? {
+      OR: [
+        { name: { contains: search, mode: "insensitive" } },
+        { email: { contains: search, mode: "insensitive" } },
+        { phone: { contains: search, mode: "insensitive" } },
+      ],
+    }
+    : {};
+
+  const [users, total] = await Promise.all([
+    prisma.user.findMany({
+      where,
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        role: true,
+        hostelId: true,
+        roomId: true,
+        createdAt: true,
+        hostel: { select: { id: true, name: true } },
+        room: { select: { id: true, roomNo: true } },
+        bed: { select: { id: true, bedNo: true } },
+      },
+      orderBy: { createdAt: "desc" },
+      skip,
+      take: limit,
+    }),
+    prisma.user.count({ where }),
+  ]);
+
+  return {
+    users,
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+    },
+  };
+};
+
+
+export const createMonthlyFeeService = async ({ userId, month, amount, dueDate }) => {
+  // Check if fee already exists for this user+month
+  const existing = await prisma.monthlyFee.findFirst({
+    where: { userId, month },
+  });
+
+  if (existing) {
+    throw new AppError(`Fee for ${month} already exists for this user`, 409);
+  }
+
+  const fee = await prisma.monthlyFee.create({
+    data: {
+      userId,
+      month,
+      amount,
+      dueDate: new Date(dueDate),
+    },
+    include: {
+      user: { select: { id: true, name: true, email: true } },
+    },
+  });
+
+  return fee;
+};
+
+export const getMonthlyFeesService = async (page = 1, limit = 20, filters = {}) => {
+  const skip = (page - 1) * limit;
+  const where = {};
+
+  if (filters.userId) where.userId = filters.userId;
+  if (filters.status) where.status = filters.status;
+  if (filters.month) where.month = filters.month;
+
+  const [fees, total] = await Promise.all([
+    prisma.monthlyFee.findMany({
+      where,
+      include: {
+        user: { select: { id: true, name: true, email: true } },
+        payment: true,
+      },
+      orderBy: { createdAt: "desc" },
+      skip,
+      take: limit,
+    }),
+    prisma.monthlyFee.count({ where }),
+  ]);
+
+  return {
+    fees,
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+    },
+  };
+};
+
+export const getUserMonthlyFeesService = async (userId, page = 1, limit = 20) => {
+  const skip = (page - 1) * limit;
+
+  const [fees, total] = await Promise.all([
+    prisma.monthlyFee.findMany({
+      where: { userId },
+      include: { payment: true },
+      orderBy: { dueDate: "desc" },
+      skip,
+      take: limit,
+    }),
+    prisma.monthlyFee.count({ where: { userId } }),
+  ]);
+
+  return {
+    fees,
+    pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+  };
+};
+
 export const toaddnewuser = async (name, email, phone, password, role, actorRole) => {
 
   const actorRoleLevel = ROLE_LEVELS[actorRole];

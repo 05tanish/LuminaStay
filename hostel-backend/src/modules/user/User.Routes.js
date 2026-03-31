@@ -1,6 +1,6 @@
 import { Router } from "express";
 
-import { getMe } from "./User.Controller.js";
+import { getMe, getUserFees } from "./User.Controller.js";
 import {
    getUserNotifications,
    markNotificationRead
@@ -95,5 +95,32 @@ router.get("/notifications", getUserNotifications);
  *         description: Notification not found
  */
 router.patch("/notifications/:id/read", markNotificationRead);
+
+/* ==============================
+   USER MONTHLY FEES
+============================== */
+
+/**
+ * @swagger
+ * /api/user/my-fees:
+ *   get:
+ *     summary: Get current user's monthly fees
+ *     tags: [User]
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: List of monthly fees
+ */
+router.get("/my-fees", getUserFees);
 
 export default router;

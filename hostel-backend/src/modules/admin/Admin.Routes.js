@@ -4,6 +4,9 @@ import {
    addUser,
    deleteUser,
    updateRole,
+   getUsers,
+   createMonthlyFee,
+   getMonthlyFees,
 } from "./Admin.Controller.js";
 import { broadcastNotification, sendUserNotification } from "../Notification/Notification.Controller.js";
 import { protect } from "../../middleware/Authentification.Middleware.js";
@@ -25,6 +28,34 @@ router.use(authorize("ADMIN"));
 /* ==============================
    USER MANAGEMENT
 ============================== */
+
+/**
+ * @swagger
+ * /api/admin/users:
+ *   get:
+ *     summary: List all users with pagination and search (ADMIN only)
+ *     tags: [Admin]
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Search by name, email, or phone
+ *     responses:
+ *       200:
+ *         description: Paginated list of users
+ */
+router.get("/users", getUsers);
 
 // Create new user
 /**
@@ -171,5 +202,77 @@ router.post("/notifications/broadcast", broadcastNotification);
  *         description: Notification sent
  */
 router.post("/notifications/user", sendUserNotification);
+
+/* ==============================
+   MONTHLY FEE MANAGEMENT
+============================== */
+
+/**
+ * @swagger
+ * /api/admin/monthly-fees:
+ *   post:
+ *     summary: Create a monthly fee for a user (ADMIN only)
+ *     tags: [Admin]
+ *     security:
+ *       - cookieAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [userId, month, amount, dueDate]
+ *             properties:
+ *               userId:
+ *                 type: string
+ *               month:
+ *                 type: string
+ *                 description: "Format: YYYY-MM (e.g., 2026-03)"
+ *               amount:
+ *                 type: integer
+ *               dueDate:
+ *                 type: string
+ *                 format: date
+ *     responses:
+ *       201:
+ *         description: Monthly fee created
+ */
+router.post("/monthly-fees", createMonthlyFee);
+
+/**
+ * @swagger
+ * /api/admin/monthly-fees:
+ *   get:
+ *     summary: Get all monthly fees with filters (ADMIN only)
+ *     tags: [Admin]
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: userId
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [PENDING, PAID, OVERDUE]
+ *       - in: query
+ *         name: month
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Paginated list of monthly fees
+ */
+router.get("/monthly-fees", getMonthlyFees);
 
 export default router;
