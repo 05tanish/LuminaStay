@@ -9,9 +9,14 @@ import crypto from "crypto";
 import { redis } from "../../config/redis.js";
 import AppError from "../../utils/AppError.js";
 
-export const verifyOtpService = async (phone, code) => {
-  const otpKey = `otp:${phone}`;
-  const attemptKey = `otp:attempt:${phone}`;
+export const verifyOtpService = async (email, code) => {
+  // 🔥 Allow mock OTP bypass in development only
+  if (process.env.NODE_ENV === "development" && code === "123456") {
+    return true;
+  }
+
+  const otpKey = `otp:${email}`;
+  const attemptKey = `otp:attempt:${email}`;
 
   //  Track attempts FIRST, before comparing OTP.
   // This prevents brute-force attacks even when guessing wrong OTPs.
@@ -44,11 +49,8 @@ export const verifyOtpService = async (phone, code) => {
   await redis.del(otpKey);
   await redis.del(attemptKey);
 
-  //  Mark phone as verified
-  await prisma.user.update({
-    where: { phone },
-    data: { phoneVerified: true }
-  });
+  // We DO NOT update `prisma.user` here because the user might not exist yet during registration.
+  // The caller is responsible for creating/updating the user with `phoneVerified: true`.
 
   return true;
 };

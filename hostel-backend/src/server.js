@@ -1,9 +1,3 @@
-// Multiple improvements:
-// 1. Imported `prisma` — was used in shutdown handler but never imported
-// 2. Imported `redis` — disconnect it during graceful shutdown
-// 3. Added unhandled rejection/exception handlers to prevent silent crashes
-// 4. Added shutdown timeout to force-exit if cleanup takes too long
-// 5. Replaced console.log with structured logger
 import "dotenv/config";
 import App from './app.js'
 import { PORT } from './config/env.js'
@@ -18,7 +12,7 @@ const server = App.listen(PORT, () => {
 const shutdown = async (signal) => {
   logger.info(`${signal} received. Starting graceful shutdown...`);
 
-  // [REVIEW] Set a timeout to force exit if cleanup takes too long
+  //  Set a timeout to force exit if cleanup takes too long
   const forceExitTimeout = setTimeout(() => {
     logger.error("Shutdown timed out. Forcing exit.");
     process.exit(1);
@@ -28,11 +22,11 @@ const shutdown = async (signal) => {
     logger.info("HTTP server closed");
 
     try {
-      // [REVIEW FIX] prisma was referenced but never imported — now properly imported
+      //  prisma was referenced but never imported — now properly imported
       await prisma.$disconnect();
       logger.info("Database disconnected");
 
-      // [REVIEW] Also disconnect Redis during shutdown
+      //  Also disconnect Redis during shutdown
       await redis.disconnect();
       logger.info("Redis disconnected");
 
@@ -49,13 +43,12 @@ const shutdown = async (signal) => {
 process.on("SIGINT", () => shutdown("SIGINT"));
 process.on("SIGTERM", () => shutdown("SIGTERM"));
 
-// [REVIEW] Catch unhandled promise rejections — prevents silent failures
+//  Catch unhandled promise rejections — prevents silent failures
 process.on("unhandledRejection", (reason) => {
   logger.error("Unhandled Rejection", { reason: reason?.message || reason });
-  // [REVIEW] In production, you may want to shut down gracefully here
 });
 
-// [REVIEW] Catch uncaught exceptions — log and exit since state is unreliable
+//  Catch uncaught exceptions — log and exit since state is unreliable
 process.on("uncaughtException", (err) => {
   logger.error("Uncaught Exception", { error: err.message, stack: err.stack });
   process.exit(1);

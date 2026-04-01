@@ -24,7 +24,7 @@ model User {
   name          String
   email         String   @unique
   phone         String?  @unique
-  phoneVerified Boolean  @default(false)
+  emailVerified Boolean  @default(false)
   password      String?
   role          Role     @default(USER)
 
@@ -191,16 +191,6 @@ model UserHostel {
 
   @@unique([userId, hostelId])
   @@index([hostelId])
-}
-model OTP {
-  id        String   @id @default(uuid())
-  phone     String
-  code      String
-  expiresAt DateTime
-  verified  Boolean  @default(false)
-  createdAt DateTime @default(now())
-
-  @@index([phone])
 }
 enum InviteType {
   EMAIL

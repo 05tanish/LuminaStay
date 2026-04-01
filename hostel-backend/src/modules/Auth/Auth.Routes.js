@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { login, logout } from './Auth.Controller.js'
+import { login, logout, register } from './Auth.Controller.js'
 import { googleLogin } from './GoogleAuth.Controller.js'
 import { refreshTokens } from './Refresh.Controller.js'
 import { sendOtp } from './Otp.Controller.js'
@@ -14,6 +14,43 @@ const router = Router()
  *   name: Auth
  *   description: Authentication and Token Management
  */
+
+/**
+ * @swagger
+ * /api/auth/register:
+ *   post:
+ *     summary: Register a new user with or without an invite code
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [name, email, phone, password, otp]
+ *             properties:
+ *               name:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *               phone:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *               otp:
+ *                 type: string
+ *               code:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Successful registration
+ *       400:
+ *         description: Invalid input or OTP
+ */
+router.post('/register',
+  rateLimiter({ window: 900, limit: 10, message: "Too many registration attempts. Please try again later." }),
+  register
+)
 
 /**
  * @swagger
@@ -107,9 +144,9 @@ router.post('/refresh',
  *         application/json:
  *           schema:
  *             type: object
- *             required: [phone]
+ *             required: [email]
  *             properties:
- *               phone:
+ *               email:
  *                 type: string
  *     responses:
  *       200:

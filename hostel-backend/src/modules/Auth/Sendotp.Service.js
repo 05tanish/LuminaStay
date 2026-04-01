@@ -1,12 +1,14 @@
-import axios from "axios";
 import { redis } from "../../config/redis.js";
 import AppError from "../../utils/AppError.js";
 import crypto from "crypto";
+import { Resend } from 'resend';
 
-export const sendOtpService = async (phone) => {
+const resend = new Resend(process.env.RESEND_API_KEY);
+
+export const sendOtpService = async (email) => {
   try {
-    const cooldownKey = `otp:cooldown:${phone}`;
-    const otpKey = `otp:${phone}`;
+    const cooldownKey = `otp:cooldown:${email}`;
+    const otpKey = `otp:${email}`;
 
     // 🚫 Check cooldown (60 sec)
     const cooldown = await redis.get(cooldownKey);
@@ -26,26 +28,13 @@ export const sendOtpService = async (phone) => {
     // ✅ Set cooldown (60 sec)
     await redis.set(cooldownKey, "1", "EX", 60);
 
-    // 📩 Send via MSG91
-    await axios.post(
-      "https://control.msg91.com/api/v5/flow/",
-      {
-        template_id: process.env.MSG91_TEMPLATE_ID,
-        short_url: "0",
-        recipients: [
-          {
-            mobiles: `91${phone}`,
-            OTP: otp
-          }
-        ]
-      },
-      {
-        headers: {
-          authkey: process.env.MSG91_API_KEY,
-          "Content-Type": "application/json"
-        }
-      }
-    );
+    // 📩 Send via Resend
+    await resend.emails.send({
+      from: 'Hostel Management <no-reply@yourdomain.com>', // Since it's a test/local setup, maybe use a generic one or 'onboarding@resend.dev' 
+      to: email,
+      subject: 'Your Verification Code',
+      html: `<p>Your verification code is <strong>${otp}</strong>. It expires in 5 minutes.</p>`
+    });
 
     return true;
   } catch (error) {

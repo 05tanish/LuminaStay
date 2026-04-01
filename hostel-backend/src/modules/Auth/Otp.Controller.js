@@ -1,16 +1,16 @@
-import { asyncHandler } from "../../utils/asyncHandler.js";
+import { asyncHandler } from "../../utils/AsyncHandler.js";
 import AppError from "../../utils/AppError.js";
 import { successResponse } from "../../utils/ApiResponse.js";
 import { sendOtpService } from "../Auth/Sendotp.Service.js";
 
 export const sendOtp = asyncHandler(async (req, res) => {
-  const { phone } = req.body;
+  const { email } = req.body;
 
-  if (!phone) {
-    throw new AppError("Phone required", 400);
+  if (!email) {
+    throw new AppError("Email required", 400);
   }
 
-  await sendOtpService(phone);
+  await sendOtpService(email);
 
   return successResponse(res, {
     statusCode: 200,
