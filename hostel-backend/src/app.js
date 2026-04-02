@@ -71,7 +71,7 @@ App.use("/api/payment", paymentRoutes);
 
 // 404 handler for unregistered routes — returns a clear error instead
 // of the default Express HTML response
-App.all("*", (req, res, next) => {
+App.use((req, res, next) => {
   next(new AppError(`Route ${req.originalUrl} not found`, 404));
 });
 

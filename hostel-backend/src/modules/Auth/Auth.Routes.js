@@ -2,7 +2,7 @@ import { Router } from 'express'
 import { login, logout, register } from './Auth.Controller.js'
 import { googleLogin } from './GoogleAuth.Controller.js'
 import { refreshTokens } from './Refresh.Controller.js'
-import { sendOtp } from './Otp.Controller.js'
+import { sendOtp, verifyOtp } from './Otp.Controller.js'
 import { rateLimiter } from '../../middleware/Ratelimiter.js'
 import { protect } from '../../middleware/Authentification.Middleware.js'
 
@@ -160,6 +160,35 @@ router.post('/refresh',
 router.post('/otp/send',
   rateLimiter({ window: 300, limit: 3, message: "Too many OTP requests. Please wait 5 minutes." }),
   sendOtp
+)
+
+/**
+ * @swagger
+ * /api/auth/otp/verify:
+ *   post:
+ *     summary: Verify OTP
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [email, code]
+ *             properties:
+ *               email:
+ *                 type: string
+ *               code:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: OTP verified successfully
+ *       400:
+ *         description: Invalid OTP
+ */
+router.post('/otp/verify',
+  rateLimiter({ window: 300, limit: 15, message: "Too many verification attempts." }),
+  verifyOtp
 )
 
 /**

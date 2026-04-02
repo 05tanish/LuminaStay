@@ -9,13 +9,14 @@ import { setAuthCookies, clearAuthCookies } from '../../utils/tokenHelpers.js'
 import { hash_password } from '../../utils/hash.js'
 import { verifyOtpService } from './Otpverification.Service.js'
 import { validateInviteService } from '../Invitesystem/Invite.Service.js'
+import { redis } from '../../config/redis.js'
 
 // Register with unified logic (Invite vs Standalone)
 export const register = asyncHandler(async (req, res) => {
-    const { name, email, phone, password, otp, code } = req.body;
+    const { name, email, phone, password, code } = req.body;
 
-    if (!name || !email || !phone || !password || !otp) {
-        throw new AppError("Name, email, phone, password, and OTP are required", 400);
+    if (!name || !email || !phone || !password) {
+        throw new AppError("Name, email, phone, and password are required", 400);
     }
 
     // Check if user already exists
@@ -26,8 +27,11 @@ export const register = asyncHandler(async (req, res) => {
         throw new AppError("Email or phone already in use", 400);
     }
 
-    // Verify OTP first against email
-    await verifyOtpService(email, otp);
+    // Verify the email was successfully pre-verified
+    const verifiedFlag = await redis.get(`email-verified:${email}`);
+    if (!verifiedFlag) {
+        throw new AppError("Email has not been verified. Please complete OTP verification first.", 403);
+    }
 
     // If invite code exists, validate it
     let invite = null;
@@ -82,6 +86,10 @@ export const register = asyncHandler(async (req, res) => {
 
     // Automatically log user in
     await setAuthCookies(res, user);
+    
+    // Clear verification flag so it can't be reused
+    await redis.del(`email-verified:${email}`);
+
     logger.info("User registered and logged in", { userId: user.id, email: user.email, role: user.role });
 
     return successResponse(res, {

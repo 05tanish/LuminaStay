@@ -30,7 +30,7 @@ export const sendOtpService = async (email) => {
 
     // 📩 Send via Resend
     await resend.emails.send({
-      from: 'Hostel Management <no-reply@yourdomain.com>', // Since it's a test/local setup, maybe use a generic one or 'onboarding@resend.dev' 
+      from: 'onboarding@resend.dev', // Default test email for Resend
       to: email,
       subject: 'Your Verification Code',
       html: `<p>Your verification code is <strong>${otp}</strong>. It expires in 5 minutes.</p>`

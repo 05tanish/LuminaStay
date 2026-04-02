@@ -20,7 +20,7 @@ export const createHostelService = async ({ name, address, userId }) => {
       data: {
         userId,
         hostelId: hostel.id,
-        role: "SUPER_ADMIN"
+        role: "ADMIN"
       }
     });
 

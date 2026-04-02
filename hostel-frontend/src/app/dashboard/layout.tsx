@@ -96,7 +96,8 @@ export default function DashboardLayout({
           <nav className="grid items-start px-2 py-4 space-y-1 lg:px-4 text-sm font-medium">
             {links.map((link) => {
               const Icon = link.icon;
-              const isActive = pathname === link.href || (pathname.startsWith(link.href) && link.href !== `/dashboard/${user.role.toLowerCase()}`);
+              const normalizedRole = user.role.toLowerCase().replace('_', '');
+              const isActive = pathname === link.href || (pathname.startsWith(link.href) && link.href !== `/dashboard/${normalizedRole}`);
               return (
                 <Link
                   key={link.href}
@@ -136,15 +137,15 @@ export default function DashboardLayout({
         <header className="sticky top-0 z-30 flex h-14 w-full items-center gap-4 border-b bg-background px-4 lg:h-[60px] lg:px-6 justify-end shadow-sm">
            {/* Mobile menu could go here, omitting for brevity mostly desktop focus per prompt's "production-level dashboard" flavor */}
            <div className="flex gap-4 items-center">
-             <Link href="/dashboard/notifications">
-               <Button variant="ghost" size="icon" className="relative">
+             <Button variant="ghost" size="icon" className="relative" asChild>
+               <Link href="/dashboard/notifications">
                  <Bell className="h-[1.2rem] w-[1.2rem] text-muted-foreground" />
-               </Button>
-             </Link>
+               </Link>
+             </Button>
              <ThemeToggle />
              {/* Simple user dropdown */}
              <DropdownMenu>
-                <DropdownMenuTrigger>
+                <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" className="rounded-full">
                     <Avatar className="h-8 w-8">
                       <AvatarFallback>{user.name?.charAt(0).toUpperCase()}</AvatarFallback>

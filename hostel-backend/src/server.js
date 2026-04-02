@@ -27,7 +27,7 @@ const shutdown = async (signal) => {
       logger.info("Database disconnected");
 
       //  Also disconnect Redis during shutdown
-      await redis.disconnect();
+      redis.disconnect();
       logger.info("Redis disconnected");
 
       clearTimeout(forceExitTimeout);
