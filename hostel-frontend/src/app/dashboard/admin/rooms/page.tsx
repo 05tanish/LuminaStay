@@ -65,11 +65,9 @@ export default function AdminRoomsPage() {
           </p>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger>
-            <Button className="bg-indigo-600 hover:bg-indigo-700 text-white gap-2" onClick={() => setOpen(true)}>
-              <Plus className="h-4 w-4" />
-              Add Room
-            </Button>
+          <DialogTrigger render={<Button className="bg-indigo-600 hover:bg-indigo-700 text-white gap-2" />}>
+            <Plus className="h-4 w-4" />
+            Add Room
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>

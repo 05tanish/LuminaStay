@@ -35,8 +35,8 @@ export function useHostels() {
   return useQuery({
     queryKey: QK.hostels,
     queryFn: async () => {
-      const res = await hostelApi.getAll();
-      return res.data.data;
+      const res = await hostelApi.getAll({ page: 1, limit: 100 });
+      return res.data.data?.hostels || res.data.data || [];
     },
   });
 }

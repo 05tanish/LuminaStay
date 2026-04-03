@@ -86,7 +86,7 @@ export const register = asyncHandler(async (req, res) => {
 
     // Automatically log user in
     await setAuthCookies(res, user);
-    
+
     // Clear verification flag so it can't be reused
     await redis.del(`email-verified:${email}`);
 

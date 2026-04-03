@@ -11,7 +11,10 @@ export const sendOtp = asyncHandler(async (req, res) => {
   if (!email) {
     throw new AppError("Email required", 400);
   }
-
+  if (!email || !email.includes("@")) {
+    throw new AppError("Invalid email", 400);
+  }
+  console.log("OTP route hit");
   await sendOtpService(email);
 
   return successResponse(res, {

@@ -113,10 +113,8 @@ export default function SuperAdminDashboard() {
       {/* Action buttons */}
       <div className="flex gap-3">
         <Dialog open={hostelOpen} onOpenChange={setHostelOpen}>
-          <DialogTrigger>
-            <Button className="bg-indigo-600 hover:bg-indigo-700 text-white gap-2" onClick={() => setHostelOpen(true)}>
-              <Plus className="h-4 w-4" /> Create Hostel
-            </Button>
+          <DialogTrigger render={<Button className="bg-indigo-600 hover:bg-indigo-700 text-white gap-2" />}>
+            <Plus className="h-4 w-4" /> Create Hostel
           </DialogTrigger>
           <DialogContent>
             <DialogHeader><DialogTitle>Create New Hostel</DialogTitle></DialogHeader>
@@ -137,10 +135,8 @@ export default function SuperAdminDashboard() {
         </Dialog>
 
         <Dialog open={assignOpen} onOpenChange={setAssignOpen}>
-          <DialogTrigger>
-            <Button variant="outline" className="gap-2" onClick={() => setAssignOpen(true)}>
-              <Users className="h-4 w-4" /> Assign Admin
-            </Button>
+          <DialogTrigger render={<Button variant="outline" className="gap-2" />}>
+            <Users className="h-4 w-4" /> Assign Admin
           </DialogTrigger>
           <DialogContent>
             <DialogHeader><DialogTitle>Assign Admin to Hostel</DialogTitle></DialogHeader>

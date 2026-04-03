@@ -44,7 +44,7 @@ const router = Router();
  *       201:
  *         description: Hostel created successfully
  */
-router.post("/", protect, authorize("ADMIN"), createHostel);
+router.post("/", protect, authorize("SUPERADMIN"), createHostel);
 /**
  * @swagger
  * /api/hostel:

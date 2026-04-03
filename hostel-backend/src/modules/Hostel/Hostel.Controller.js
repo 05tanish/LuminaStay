@@ -39,7 +39,8 @@ export const getHostels = asyncHandler(async (req, res) => {
   return successResponse(res, {
     statusCode: 200,
     message: "Hostels fetched successfully",
-    data: result
+    data: result.hostels,
+    pagination: result.pagination
   });
 });
 

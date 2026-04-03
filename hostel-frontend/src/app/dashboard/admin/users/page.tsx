@@ -89,11 +89,9 @@ export default function AdminUsersPage() {
           </p>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger>
-            <Button className="bg-indigo-600 hover:bg-indigo-700 text-white gap-2" onClick={() => setOpen(true)}>
-              <UserPlus className="h-4 w-4" />
-              Add User
-            </Button>
+          <DialogTrigger render={<Button className="bg-indigo-600 hover:bg-indigo-700 text-white gap-2" />}>
+            <UserPlus className="h-4 w-4" />
+            Add User
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>

@@ -27,7 +27,7 @@ export const sendOtpService = async (email) => {
 
     // ✅ Set cooldown (60 sec)
     await redis.set(cooldownKey, "1", "EX", 60);
-
+    console.log("otp has been sent", otp);
     // 📩 Send via Resend
     await resend.emails.send({
       from: 'onboarding@resend.dev', // Default test email for Resend

@@ -66,10 +66,8 @@ export default function HostelsManagement() {
         </div>
         
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
-          <DialogTrigger>
-            <Button className="gap-2" onClick={() => setIsOpen(true)}>
-              <Plus className="w-4 h-4" /> Add Hostel
-            </Button>
+          <DialogTrigger render={<Button className="gap-2" />}>
+            <Plus className="w-4 h-4" /> Add Hostel
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>

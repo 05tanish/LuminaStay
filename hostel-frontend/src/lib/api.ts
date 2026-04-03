@@ -25,7 +25,7 @@ export const authApi = {
 // ─── Hostel ──────────────────────────────────────────────────────────────────
 
 export const hostelApi = {
-  getAll: () => api.get("/hostel"),
+  getAll: (params?: { page?: number; limit?: number }) => api.get("/hostel", { params }),
   create: (data: { name: string; address: string }) =>
     api.post("/super-admin", data),
   assignAdmin: (data: { userId: string; hostelId: string }) =>

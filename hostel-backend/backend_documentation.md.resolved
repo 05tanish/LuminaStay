@@ -1,0 +1,170 @@
+# Hostel Management System - Backend Documentation
+
+This document provides a comprehensive guide for frontend developers integrating with the Node.js/Express Prisma backend.
+
+## Overview
+
+The backend is built with **Node.js, Express, and Prisma ORM** (PostgreSQL). It follows a RESTful architecture, divided into domain-specific modules. Authentication uses **HTTP-only cookies** containing JWT tokens, meaning the frontend does not need to manually attach Authorization headers for protected routes!
+
+---
+
+## 🚀 Running the Backend Locally
+
+1. **Install dependencies:**
+   ```bash
+   npm install
+   ```
+2. **Environment Variables (`.env`):**
+   You need to set up the following in your `.env` file from the backend root:
+   ```env
+   PORT=5003
+   DATABASE_URL="postgresql://user:password@localhost:5432/hostel_db?schema=public"
+   JWT_SECRET="your_secure_jwt_secret"
+   FRONTEND_URL="http://localhost:3000"
+   CORS_ORIGIN="http://localhost:3000"
+   RAZORPAY_KEY_ID="rzp_test_..."
+   RAZORPAY_KEY_SECRET="..."
+   TWILIO_ACCOUNT_SID="..."
+   TWILIO_AUTH_TOKEN="..."
+   TWILIO_PHONE_NUMBER="..."
+   ```
+3. **Database Setup:**
+   Run Prisma migrations to set up your local PostgreSQL database:
+   ```bash
+   npx prisma migrate dev --name init
+   ```
+   Generate Prisma Client:
+   ```bash
+   npx prisma generate
+   ```
+4. **Start the server:**
+   ```bash
+   npm run dev
+   ```
+
+### Pushing/Migrating Database to Production (Cloud)
+When deploying or pointing to a production database URL:
+```bash
+npx prisma migrate deploy
+```
+*Note:* Do not use `migrate dev` in production, as it can reset the database.
+
+---
+
+## 🔐 Authentication & Authorization Logic
+
+### Authentication Flow
+The app uses an **Invite-First + OTP** flow for registration, and standard Email/Password for login. 
+1. **Login**: Client sends Email/Password `POST /api/auth/login`. Server responds with User data and sets an **`jwtToken` HTTP-Only cookie**.
+2. **Subsequent Requests**: Because the cookie carries `jwtToken`, you must ensure your Axios or Fetch instances use `withCredentials: true`.
+3. **Logout**: `POST /api/auth/logout`. Clears the HTTP-only cookie.
+4. **Identify User**: Use `GET /api/user/me` on app initial load to verify session.
+
+### Role-Based Access Control (RBAC)
+There are three hierarchy levels:
+- **`SUPER_ADMIN`**: Can create hostels and assign `ADMIN` to them.
+- **`ADMIN`**: Hostel owners/managers. Can create rooms, allocate beds, generate fee invoices, broadcast notifications, and view all hostel data.
+- **`USER`** (Resident/Student): Can view their room, submit complaints, view the food menu, and pay monthly fees.
+
+---
+
+## 📋 Data Models (Prisma)
+
+### Important Entities:
+- **`Hostel`**: Core entity (`id`, `name`, `address`). Reused across multiple franchises.
+- **`User`**: Has `role` (`SUPER_ADMIN`, `ADMIN`, `USER`), `hostelId`, `roomId`. A `USER` is linked exactly to one `Bed`.
+- **`Room`**: Belongs to a Hostel. Holds a specific `capacity`.
+- **`Bed`**: Belongs to a Room. Tracks the `userId` occupying it.
+- **`MonthlyFee`**: A billing invoice for a specific month (`amount`, `dueDate`, `status` [PENDING, PAID, OVERDUE]).
+- **`Payment`**: The actual transaction (`amount`, `mode` [CASH, ONLINE], `razorpayOrderId`, `transactionId`).
+- **`Complaint`**: Submitted by users (`status` [OPEN, IN_PROGRESS, RESOLVED]).
+- **`Food` & `Meal`**: Daily calendar data. Tracks items by date and `MealType` (BREAKFAST, LUNCH, DINNER).
+- **`Invite`**: Codes used to allow new Admins or Users to securely join a specific Hostel.
+
+---
+
+## 🔌 Complete API Endpoint List
+
+> **All routes are prefixed with `/api`** (e.g., `http://localhost:5003/api/auth/login`)
+
+### 1. Auth & Invites
+| Method | Endpoint | Access | Description | Request Body |
+|--------|---------|--------|-------------|--------------|
+| `POST` | `/auth/login` | Public | Login via email/pass | `{ email, password }` |
+| `POST` | `/auth/logout` | Public | Clear auth cookie | None |
+| `POST` | `/auth/otp/send` | Public | Request SMS OTP | `{ phone }` |
+| `POST` | `/invite` | ADMIN | Generate an invite code | `{ role, type, email?, hostelId }` |
+| `GET` | `/invite/validate/:code` | Public | Check if code is valid | None |
+| `POST` | `/invite/register` | Public | Register using invite | `{ code, name, email, password, phone, otp }` |
+
+### 2. User (Resident)
+| Method | Endpoint | Access | Description |
+|--------|---------|--------|-------------|
+| `GET` | `/user/me` | Auth | Get current authenticated user details |
+| `GET` | `/user/profile` | Auth | Get extended profile details |
+| `GET` | `/user/my-fees` | USER | View personal payment/fee history |
+| `GET` | `/user/notifications` | Auth | View my notification inbox |
+| `PATCH`| `/user/notifications/:id/read` | Auth | Mark notification as read |
+
+### 3. Super Admin
+| Method | Endpoint | Access | Description | Request Body |
+|--------|---------|--------|-------------|--------------|
+| `POST` | `/super-admin` | SA | Create a new hostel | `{ name, address }` |
+| `POST` | `/super-admin/assign-admin`| SA | Assign an ADMIN to a hostel | `{ userId, hostelId }` |
+
+### 4. Admin Management
+| Method | Endpoint | Access | Description | Request Body / Query |
+|--------|---------|--------|-------------|--------------|
+| `GET` | `/admin/users` | ADMIN | Get paginated list of residents | `?page, ?limit, ?search` |
+| `POST` | `/admin/users` | ADMIN | Create a user account manually | `{ name, email, password, role }` |
+| `DELETE`| `/admin/users/:userId` | ADMIN | Delete a user | None |
+| `POST` | `/admin/monthly-fees` | ADMIN | Generate a fee for a user | `{ userId, month, amount, dueDate }` |
+| `GET` | `/admin/monthly-fees` | ADMIN | Get list of all fees | `?status, ?month, ?userId` |
+| `POST` | `/admin/notifications/broadcast` | ADMIN | Broadcast to all users | `{ title, message }` |
+
+### 5. Rooms & Beds
+| Method | Endpoint | Access | Description | Request Body |
+|--------|---------|--------|-------------|--------------|
+| `POST` | `/rooms` | ADMIN | Create a multi-bed room | `{ roomNo, capacity, hostelId }` |
+| `GET` | `/rooms` | Auth | List all rooms and beds | `?hostelId` |
+| `POST` | `/rooms/assign-bed` | ADMIN | Allocate a bed to a user | `{ userId, bedId }` |
+| `POST` | `/rooms/vacate-bed` | ADMIN | Remove user from active bed | `{ userId }` |
+
+### 6. Complaints
+| Method | Endpoint | Access | Description | Request Body |
+|--------|---------|--------|-------------|--------------|
+| `POST` | `/complaint` | USER | Submit an issue | `{ title, description }` |
+| `GET` | `/complaint` | Auth | List complaints (Admin sees all) | `?page, ?limit` |
+| `PATCH`| `/complaint/status` | ADMIN | Update ticket status | `{ complaintID, status: "OPEN"\|"RESOLVED" }` |
+| `DELETE`| `/complaint/:id` | USER/ADMIN | Delete a complaint | None |
+
+### 7. Food Menu
+| Method | Endpoint | Access | Description | Request Body |
+|--------|---------|--------|-------------|--------------|
+| `GET` | `/food/weekly` | Auth | Get current week's food schedule | None |
+| `GET` | `/food/:date` | Auth | Get specific date menu | None (Date format: YYYY-MM-DD) |
+| `POST` | `/food` | ADMIN | Upsert menu for a date | `{ date: "YYYY-MM-DD", meals: { BREAKFAST: [...], LUNCH: [...], DINNER: [...] } }` |
+
+### 8. Payments (Cash & Online)
+| Method | Endpoint | Access | Description | Request Body |
+|--------|---------|--------|-------------|--------------|
+| `POST` | `/payment/cash` | ADMIN | Record an offline manual payment | `{ monthlyFeeId, userId, remarks?, transactionId? }` |
+| `POST` | `/payment/online/create-order`| USER | Generate Razorpay order ID | `{ monthlyFeeId }` |
+| `POST` | `/payment/online/verify` | USER | Verify Razorpay integrity sig. | `{ razorpayOrderId, razorpayPaymentId, razorpaySignature, monthlyFeeId }` |
+
+---
+
+## 💣 Error Handling & Edge Cases
+
+The backend utilizes standard HTTP status codes:
+- **`200/201`**: Success.
+- **`400 Bad Request`**: Validation errors, duplicate room numbers, trying to assign a bed that is already occupied.
+- **`401 Unauthorized`**: Mission or expired JWT token. Frontend needs to redirect to `/auth/login`.
+- **`403 Forbidden`**: Token valid, but user lacks `role` permissions (e.g., a USER hitting an ADMIN route).
+- **`404 Not Found`**: Resource doesn't exist.
+
+### Common Edge Cases to Account for in Frontend:
+1. **Bed Assignment**: A user can only occupy one bed at a time. The backend will throw a 400 if you attempt to assign them to another without vacating them first.
+2. **Double Online Payment**: If the `MonthlyFee.status` is already `PAID`, attempting to create a Razorpay order will fail.
+3. **Missing Hostel ID**: Admins will only see data (rooms, users) associated with their `hostelId`. Super Admins can query globally. Ensure `hostelId` is properly passed when logged in.
+4. **Registration Flow Drop-off**: If a user generates an OTP but the browser refreshes, they need to request a new OTP. The backend `OTP` model relies on `phone` as an index.
