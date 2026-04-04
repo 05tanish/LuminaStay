@@ -13,35 +13,57 @@ model Hostel {
   address   String
   createdAt DateTime @default(now())
 
-  rooms     Room[]
-  users     User[]
-  userHostels UserHostel[]
-  invites   Invite[]
+  rooms         Room[]
+  users         User[]
+  userHostels   UserHostel[]
+  invites       Invite[]
+  complaints    Complaint[]
+  notifications Notification[]
+  payments      Payment[]
+
+  isDeleted     Boolean @default(false)
 }
 
 model User {
-  id            String   @id @default(uuid())
+  id            String  @id @default(uuid())
   name          String
-  email         String   @unique
-  phone         String?  @unique
-  emailVerified Boolean  @default(false)
+  email         String  @unique
+  phone         String? @unique
+  emailVerified Boolean @default(false)
   password      String?
-  role          Role     @default(USER)
+  role          Role    @default(USER)
 
-  hostelId      String?
-  roomId        String?
+  hostelId String?
+  roomId   String?
 
-  createdAt     DateTime @default(now())
+  createdAt DateTime @default(now())
 
-  hostel        Hostel?  @relation(fields: [hostelId], references: [id])
-  room          Room?    @relation(fields: [roomId], references: [id])
-  bed           Bed?     @relation("UserBed")
+  hostel Hostel? @relation(fields: [hostelId], references: [id])
+  room   Room?   @relation(fields: [roomId], references: [id])
+  bed    Bed?    @relation("UserBed")
 
-  complaints    Complaint[]
-  monthlyFees   MonthlyFee[]
-  payment      Payment[]
+  complaints             Complaint[]
+  complaintComments      ComplaintComment[]
+  monthlyFees            MonthlyFee[]
+  payments               Payment[]
   notificationRecipients NotificationRecipient[]
-  userHostels UserHostel[]
+  userHostels            UserHostel[]
+  userDetails            UserDetails?
+}
+
+model UserDetails {
+  id              String  @id @default(uuid())
+  userId          String  @unique
+  fatherName        String?
+  fatherPhone       String?
+  fatherProfession  String?
+  motherName        String?
+  motherPhone       String?
+  motherProfession  String?
+  parentAddress     String?
+  permanentPhone    String?
+
+  user            User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Room {
@@ -51,10 +73,10 @@ model Room {
   hostelId  String
   createdAt DateTime @default(now())
 
-  hostel    Hostel   @relation(fields: [hostelId], references: [id])
+  hostel Hostel @relation(fields: [hostelId], references: [id])
 
-  beds      Bed[]
-  users     User[]
+  beds  Bed[]
+  users User[]
 
   @@unique([hostelId, roomNo]) // 🔥 IMPORTANT
 }
@@ -65,8 +87,8 @@ model Bed {
   roomId String
   userId String? @unique
 
-  room   Room    @relation(fields: [roomId], references: [id])
-  user   User?   @relation("UserBed", fields: [userId], references: [id])
+  room Room  @relation(fields: [roomId], references: [id])
+  user User? @relation("UserBed", fields: [userId], references: [id])
 
   @@unique([roomId, bedNo])
 }
@@ -81,71 +103,98 @@ model MonthlyFee {
   paidAt    DateTime?
   createdAt DateTime      @default(now())
 
-  user      User          @relation(fields: [userId], references: [id])
-  payment   Payment?
+  user    User     @relation(fields: [userId], references: [id])
+  payment Payment?
 
   @@index([userId])
 }
 
 model Payment {
-  id                 String      @id @default(uuid())
-  userId             String
-  monthlyFeeId       String      @unique
-  amount             Int
+  id           String @id @default(uuid())
+  userId       String
+  monthlyFeeId String @unique
+  amount       Int
 
-  mode               PaymentMode   // CASH / ONLINE
+  mode PaymentMode // CASH / ONLINE / UPI
 
   // 🔥 Razorpay fields (IMPORTANT)
-  razorpayOrderId    String?
-  razorpayPaymentId  String?
-  razorpaySignature  String?
+  razorpayOrderId   String?
+  razorpayPaymentId String?
+  razorpaySignature String?
 
   // Status tracking
-  status             PaymentStatus @default(PENDING)
+  status PaymentStatus @default(PENDING)
 
   // Manual payment fields
   transactionId      String?
   remarks            String?
   collectedByAdminId String?
 
-  createdAt          DateTime      @default(now())
+  createdAt DateTime @default(now())
 
-  user               User          @relation(fields: [userId], references: [id])
-  monthlyFee         MonthlyFee    @relation(fields: [monthlyFeeId], references: [id])
+  user       User       @relation(fields: [userId], references: [id])
+  monthlyFee MonthlyFee @relation(fields: [monthlyFeeId], references: [id])
+  hostelId   String?
+  hostel     Hostel?    @relation(fields: [hostelId], references: [id])
 
   @@index([userId])
+  @@index([hostelId])
 }
 
 model Complaint {
-  id        String          @id @default(uuid())
-  title     String
-  description   String
-  status    ComplaintStatus @default(OPEN)
-  userId    String
-  createdAt DateTime        @default(now())
-  user      User            @relation(fields: [userId], references: [id])
+  id          String          @id @default(uuid())
+  title       String
+  description String
+  status      ComplaintStatus @default(OPEN)
+  userId      String
+  hostelId    String
+  createdAt   DateTime        @default(now())
+
+  user     User               @relation(fields: [userId], references: [id])
+  hostel   Hostel             @relation(fields: [hostelId], references: [id])
+  comments ComplaintComment[]
 
   @@index([userId])
+  @@index([hostelId])
+}
+
+model ComplaintComment {
+  id        String   @id @default(uuid())
+  content   String
+  createdAt DateTime @default(now())
+
+  complaintId String
+  userId      String
+
+  complaint Complaint @relation(fields: [complaintId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id])
+
+  @@index([complaintId])
 }
 
 model Notification {
   id        String   @id @default(uuid())
   title     String
   message   String
+  hostelId  String?
   createdAt DateTime @default(now())
 
+  hostel     Hostel?                 @relation(fields: [hostelId], references: [id])
   recipients NotificationRecipient[]
+
+  @@index([hostelId])
 }
 
 model NotificationRecipient {
-  id             String   @id @default(uuid())
+  id             String  @id @default(uuid())
   notificationId String
   userId         String
-  read           Boolean  @default(false)
+  read           Boolean @default(false)
 
-  notification   Notification @relation(fields: [notificationId], references: [id])
-  user           User         @relation(fields: [userId], references: [id])
-  createdAt DateTime @default(now())
+  notification Notification @relation(fields: [notificationId], references: [id])
+  user         User         @relation(fields: [userId], references: [id])
+  createdAt    DateTime     @default(now())
+
   @@unique([notificationId, userId])
   @@index([userId])
 }
@@ -155,7 +204,7 @@ model Food {
   date      DateTime @unique
   createdAt DateTime @default(now())
 
-  meals     Meal[]
+  meals Meal[]
 }
 
 model Meal {
@@ -163,56 +212,57 @@ model Meal {
   type   MealType
   foodId String
 
-  food   Food     @relation(fields: [foodId], references: [id])
-  items  MealItem[]
+  food  Food       @relation(fields: [foodId], references: [id])
+  items MealItem[]
 
   @@unique([foodId, type])
 }
 
 model MealItem {
-  id      String @id @default(uuid())
-  name    String
-  mealId  String
+  id     String @id @default(uuid())
+  name   String
+  mealId String
 
-  meal    Meal   @relation(fields: [mealId], references: [id])
+  meal Meal @relation(fields: [mealId], references: [id])
 
   @@index([mealId])
 }
 
-
 model UserHostel {
-  id        String   @id @default(uuid())
-  userId    String
-  hostelId  String
-  role      HostelRole
+  id       String     @id @default(uuid())
+  userId   String
+  hostelId String
+  role     HostelRole
 
-  user      User     @relation(fields: [userId], references: [id])
-  hostel    Hostel   @relation(fields: [hostelId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
+  hostel Hostel @relation(fields: [hostelId], references: [id])
 
   @@unique([userId, hostelId])
   @@index([hostelId])
 }
+
 enum InviteType {
   EMAIL
   OPEN
 }
 
 model Invite {
-  id        String      @id @default(uuid())
+  id        String     @id @default(uuid())
   email     String?
-  code      String      @unique
+  code      String     @unique
   role      HostelRole
   type      InviteType
   hostelId  String
   expiresAt DateTime
-  used      Boolean     @default(false)
-  createdAt DateTime    @default(now())
+  used      Boolean    @default(false)
+  createdAt DateTime   @default(now())
 
-  hostel    Hostel      @relation(fields: [hostelId], references: [id])
+  hostel Hostel @relation(fields: [hostelId], references: [id])
 
   @@index([hostelId])
   @@index([email])
 }
+
 enum MealType {
   BREAKFAST
   LUNCH
@@ -230,7 +280,6 @@ enum HostelRole {
   STUDENT
 }
 
-
 enum PaymentStatus {
   PAID
   PENDING
@@ -240,6 +289,7 @@ enum PaymentStatus {
 enum PaymentMode {
   ONLINE
   CASH
+  UPI
 }
 
 enum ComplaintStatus {
