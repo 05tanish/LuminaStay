@@ -1,5 +1,5 @@
 import express from "express";
-import { createcomplaint, deletecomplaint, getcomplaint, updatecomplaint, updatecomplaintstatus } from "./Complaint.Controller.js";
+import { createcomplaint, deletecomplaint, getcomplaint, updatecomplaint, updatecomplaintstatus, getAdminComplaints, getSuperAdminComplaints, addComplaintComment } from "./Complaint.Controller.js";
 import { protect } from "../../middleware/Authentification.Middleware.js";
 import { authorize } from "../../middleware/authorization.Middleware.js";
 const router = express.Router();
@@ -134,6 +134,10 @@ router.put("/:complaintID", protect, updatecomplaint);
  *       200:
  *         description: Status updated
  */
-router.patch("/status", protect, authorize("ADMIN"), updatecomplaintstatus);
+router.patch("/status", protect, authorize("ADMIN", "SUPER_ADMIN"), updatecomplaintstatus);
+
+router.get("/admin", protect, authorize("ADMIN"), getAdminComplaints);
+router.get("/superadmin", protect, authorize("SUPER_ADMIN"), getSuperAdminComplaints);
+router.post("/:complaintID/comments", protect, addComplaintComment);
 
 export default router;

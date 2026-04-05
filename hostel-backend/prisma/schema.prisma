@@ -49,6 +49,7 @@ model User {
   notificationRecipients NotificationRecipient[]
   userHostels            UserHostel[]
   userDetails            UserDetails?
+  profileUpdateRequests ProfileUpdateRequest[]
 }
 
 model UserDetails {
@@ -64,6 +65,18 @@ model UserDetails {
   permanentPhone    String?
 
   user            User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model ProfileUpdateRequest {
+  id               String   @id @default(uuid())
+  userId           String
+  requestedChanges Json
+  reason           String?
+  status           UpdateStatus @default(PENDING)
+  adminComment     String?
+  createdAt        DateTime @default(now())
+
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Room {
@@ -296,4 +309,10 @@ enum ComplaintStatus {
   OPEN
   IN_PROGRESS
   RESOLVED
+}
+
+enum UpdateStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }

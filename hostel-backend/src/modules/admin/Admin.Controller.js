@@ -9,14 +9,20 @@ import {
   getUsersService,
   createMonthlyFeeService,
   getMonthlyFeesService,
-  getUserMonthlyFeesService,
+  getProfileRequestsService,
+  updateProfileRequestStatusService
 } from "./Admin.Services.js";
 
 
-
+// get users
 export const getUsers = asyncHandler(async (req, res) => {
-  const page = parseInt(req.query.page) || 1;
-  const limit = parseInt(req.query.limit) || 20;
+  let page = Number(req.query.page);
+  let limit = Number(req.query.limit);
+
+  if (isNaN(page) || page < 1) page = 1;
+  if (isNaN(limit) || limit < 1) limit = 20;
+
+  limit = Math.min(limit, 100);
   const search = req.query.search || "";
 
   const result = await getUsersService(page, limit, search);
@@ -28,7 +34,7 @@ export const getUsers = asyncHandler(async (req, res) => {
   });
 });
 
-
+// contrioller for creating monthly fees 
 export const createMonthlyFee = asyncHandler(async (req, res) => {
   const { userId, month, amount, dueDate } = req.body;
 
@@ -45,10 +51,15 @@ export const createMonthlyFee = asyncHandler(async (req, res) => {
   });
 });
 
-
+//get monthly fees
 export const getMonthlyFees = asyncHandler(async (req, res) => {
-  const page = parseInt(req.query.page) || 1;
-  const limit = parseInt(req.query.limit) || 20;
+  let page = Number(req.query.page);
+  let limit = Number(req.query.limit);
+
+  if (isNaN(page) || page < 1) page = 1;
+  if (isNaN(limit) || limit < 1) limit = 20;
+
+  limit = Math.min(limit, 100);
   const { userId, status, month } = req.query;
 
   const result = await getMonthlyFeesService(page, limit, { userId, status, month });
@@ -69,7 +80,7 @@ export const addUser = asyncHandler(async (req, res) => {
   if (!name || !email || !phone || !password || !role) {
     throw new AppError("All fields are required", 400);
   }
-  const user = await toaddnewuser(name, email, phone, password, role, req.user.role);
+  const user = await toaddnewuser(name, email, phone, password, role, req.user.role, req.user.id, req.user.hostelId);
 
   return successResponse(res, {
     statusCode: 201,
@@ -87,7 +98,7 @@ export const deleteUser = asyncHandler(async (req, res) => {
     throw new AppError("UserId is required", 400);
   }
 
-  const deletedUser = await deleteUserService(req.user, userId);
+  const deletedUser = await deleteUserService(req.user, userId,);
 
   return successResponse(res, {
     statusCode: 200,
@@ -114,9 +125,41 @@ export const updateRole = asyncHandler(async (req, res) => {
   }
 
   const userupdated = await updateroleservice(userId, role, req.user);
+
   return successResponse(res, {
     statusCode: 200,
     message: "Role updated successfully",
     data: userupdated
+  });
+});
+
+// get profile request  
+export const getProfileRequests = asyncHandler(async (req, res) => {
+
+  const requests = await getProfileRequestsService(req.user);
+
+  return successResponse(res, {
+    statusCode: 200,
+    message: "Pending requests fetched",
+    data: requests
+  });
+});
+
+// update status of request status 
+export const updateProfileRequestStatus = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { status, adminComment } = req.body;
+
+  const result = await updateProfileRequestStatusService(
+    id,
+    req.user,
+    status,
+    adminComment
+  );
+
+  return successResponse(res, {
+    statusCode: 200,
+    message: `Request ${status.toLowerCase()}`,
+    data: result
   });
 });

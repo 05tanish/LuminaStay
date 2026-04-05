@@ -7,6 +7,8 @@ import {
    getUsers,
    createMonthlyFee,
    getMonthlyFees,
+   getProfileRequests,
+   updateProfileRequestStatus
 } from "./Admin.Controller.js";
 import { broadcastNotification, sendUserNotification } from "../Notification/Notification.Controller.js";
 import { protect } from "../../middleware/Authentification.Middleware.js";
@@ -141,6 +143,39 @@ router.delete("/users/:userId", deleteUser);
  *         description: Role updated
  */
 router.patch("/users/:userId/role", updateRole);
+
+
+/* ==============================
+   PROFILE APPROVALS
+============================== */
+
+/**
+ * @swagger
+ * /api/admin/profile-requests:
+ *   get:
+ *     summary: Get pending family profile updates (ADMIN only)
+ *     tags: [Admin]
+ *     security:
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: List of pending requests
+ */
+router.get("/profile-requests", getProfileRequests);
+
+/**
+ * @swagger
+ * /api/admin/profile-requests/{id}:
+ *   patch:
+ *     summary: Approve or reject profile request (ADMIN only)
+ *     tags: [Admin]
+ *     security:
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: Status updated
+ */
+router.patch("/profile-requests/:id", updateProfileRequestStatus);
 
 
 /* ==============================

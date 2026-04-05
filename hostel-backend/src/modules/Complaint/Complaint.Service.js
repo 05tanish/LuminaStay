@@ -1,36 +1,57 @@
 import { prisma } from "../../config/db.js";
 import AppError from "../../utils/AppError.js";
+import { logger } from "../../utils/logger.js";
 
-export const complaintservice = async (title, description, userid) => {
+// create the complaints
+export const complaintService = async (title, description, userId) => {
+
     const user = await prisma.user.findUnique({
-        where: {
-            id: userid,
-        }
-    })
+        where: { id: userId }
+    });
     if (!user) {
         throw new AppError("User not found", 404);
     }
-    const createcomplaint = await prisma.complaint.create({
-        data: {
-            userId: userid,
-            title,
-            description
-        },
-        select: {
-            id: true,
-            title: true,
-            description: true,
-            status: true,
-            createdAt: true
-        }
-    })
-    return createcomplaint;
+    if (!user.hostelId) {
+        throw new AppError("User is not assigned to a hostel", 400);
+    }
+    try {
+        const complaint = await prisma.complaint.create({
+            data: {
+                userId,
+                hostelId: user.hostelId,
+                title,
+                description
+            },
+            select: {
+                id: true,
+                title: true,
+                description: true,
+                status: true,
+                createdAt: true
+            }
+        });
+        logger.info("Complaint created", {
+            complaintId: complaint.id,
+            userId,
+            userRole: user.role,
+            title: complaint.title
+        });
+
+        return complaint;
+    } catch (error) {
+        logger.error("Complaint creation failed", {
+            complaintID,
+            userId,
+            error: error.message
+        });
+
+        throw new AppError("Failed to create complaint", 500);
+    }
 };
 
-//  Added authorization: only the owner can delete their own complaint.
-export const deletecomplaintservice = async (complaintID, userid) => {
-    // we verify ownership via the complaint's userId instead. This also prevents a user from deleting
-    // another user's complaint.
+// delete the comoplaints 
+export const deletecomplaintservice = async (complaintID, userid, user) => {
+
     const complaint = await prisma.complaint.findUnique({
         where: { id: complaintID }
     });
@@ -39,23 +60,45 @@ export const deletecomplaintservice = async (complaintID, userid) => {
         throw new AppError("Complaint not found", 404);
     }
 
-    //  Authorization check — ensure the user owns this complaint
     if (complaint.userId !== userid) {
         throw new AppError("You can only delete your own complaints", 403);
     }
+    const isOwner = complaint.userId === userid;
+    const isAdmin = ["ADMIN", "SUPER_ADMIN"].includes(user.role);
 
-    const deletecomplaint = await prisma.complaint.delete({
-        where: {
-            id: complaintID
-        },
-        select: {
-            id: true,
-            title: true,
-            description: true,
-        }
-    })
-    return deletecomplaint;
-}
+    if (!isOwner && !isAdmin) {
+        throw new AppError("Not authorized to delete this complaint", 403);
+    }
+    try {
+        const deletecomplaint = await prisma.complaint.delete({
+            where: {
+                id: complaintID
+            },
+            select: {
+                id: true,
+                title: true,
+                description: true,
+            }
+        })
+
+        logger.info("Complaint Deleted", {
+            complaintID,
+            userid,
+            userRole: user.role,
+            title: complaint.title
+
+        })
+        return deletecomplaint;
+    } catch (error) {
+        logger.error("Complaint deletion failed", {
+            complaintID,
+            userid,
+            error: error.message
+        });
+
+        throw new AppError("Failed to delete complaint", 500);
+    }
+};
 
 export const getcomplaintservice = async (userid, page = 1, limit = 20) => {
     const user = await prisma.user.findUnique({
@@ -67,7 +110,7 @@ export const getcomplaintservice = async (userid, page = 1, limit = 20) => {
         throw new AppError("User not found", 404);
     }
 
-    //  Added pagination — previously returned ALL complaints at once
+
     const skip = (page - 1) * limit;
 
     const [complaints, total] = await Promise.all([
@@ -100,8 +143,11 @@ export const getcomplaintservice = async (userid, page = 1, limit = 20) => {
     };
 }
 
-//  Added ownership check
+// update complaint 
 export const updatecomplaintservice = async (complaintID, title, description, userid) => {
+    if (!complaintID || !title || !description) {
+        throw new AppError("All fields are required", 400);
+    }
     const complaint = await prisma.complaint.findUnique({
         where: { id: complaintID }
     });
@@ -113,55 +159,237 @@ export const updatecomplaintservice = async (complaintID, title, description, us
     if (complaint.userId !== userid) {
         throw new AppError("You can only update your own complaints", 403);
     }
+    if (["RESOLVED", "CLOSED"].includes(complaint.status)) {
+        throw new AppError("Cannot update resolved complaints", 400);
+    }
+    try {
+        const updatecomplaint = await prisma.complaint.update({
+            where: {
+                id: complaintID
+            },
+            data: {
+                title,
+                description
+            },
+            select: {
+                id: true,
+                title: true,
+                description: true,
+                status: true,
+            }
+        })
+        logger.info("Complaint updated", {
+            complaintID,
+            userid,
+            oldTitle: complaint.title,
+            newTitle: updatedComplaint.title
+        });
+        return updatecomplaint;
+    } catch (error) {
+        logger.error("Complaint update failed", {
+            complaintID,
+            userid,
+            error: error.message
+        });
 
-    const updatecomplaint = await prisma.complaint.update({
-        where: {
-            id: complaintID
-        },
-        data: {
-            title,
-            description
-        },
-        select: {
-            id: true,
-            title: true,
-            description: true,
-            status: true,
-        }
-    })
-    return updatecomplaint;
-}
+        throw new AppError("Failed to update complaint", 500);
+
+    }
+};
 
 // Added validation for allowed status values
 const ALLOWED_STATUSES = ["OPEN", "IN_PROGRESS", "RESOLVED"];
-
-export const updatecomplaintstatusservice = async (complaintID, status) => {
-    //  Validate status enum before sending to DB
+// update complaint stats
+export const updateComplaintStatusService = async (
+    complaintId,
+    status,
+    actor
+) => {
     if (!ALLOWED_STATUSES.includes(status)) {
-        throw new AppError(`Invalid status. Must be one of: ${ALLOWED_STATUSES.join(", ")}`, 400);
+        throw new AppError(
+            `Invalid status. Must be one of: ${ALLOWED_STATUSES.join(", ")}`,
+            400
+        );
     }
 
     const complaint = await prisma.complaint.findUnique({
-        where: { id: complaintID }
+        where: { id: complaintId }
     });
 
     if (!complaint) {
         throw new AppError("Complaint not found", 404);
     }
+    if (!["ADMIN", "SUPER_ADMIN"].includes(actor.role)) {
+        throw new AppError("Not authorized to update complaint status", 403);
+    }
+    if (complaint.status === status) {
+        throw new AppError("Complaint already has this status", 400);
+    }
+    const validTransitions = {
+        OPEN: ["IN_PROGRESS"],
+        IN_PROGRESS: ["RESOLVED"],
+        RESOLVED: []
+    };
+    if (!validTransitions[complaint.status].includes(status)) {
+        throw new AppError(
+            `Invalid status transition from ${complaint.status} to ${status}`,
+            400
+        );
+    }
+    try {
+        const updatedComplaint = await prisma.complaint.update({
+            where: { id: complaintId },
+            data: { status },
+            select: {
+                id: true,
+                title: true,
+                status: true
+            }
+        });
+        logger.info("Complaint status updated", {
+            complaintId,
+            actorId: actor.id,
+            actorRole: actor.role,
+            oldStatus: complaint.status,
+            newStatus: status
+        });
+        auditLog({
+            action: "COMPLAINT_STATUS_UPDATED",
+            actorId: actor.id,
+            targetId: complaintId,
+            details: {
+                oldStatus: complaint.status,
+                newStatus: status
+            }
+        });
 
-    const updatecomplaintstatus = await prisma.complaint.update({
-        where: {
-            id: complaintID
-        },
-        data: {
-            status
-        },
-        select: {
-            id: true,
-            title: true,
-            description: true,
-            status: true,
+        return updatedComplaint;
+
+    } catch (error) {
+        logger.error("Failed to update complaint status", {
+            complaintId,
+            actorId: actor.id,
+            error: error.message
+        });
+
+        throw new AppError("Failed to update complaint status", 500);
+    }
+};
+
+// get admin complaint service
+export const getAdminComplaintsService = async (
+    hostelId,
+    page = 1,
+    limit = 20,
+    actor,
+    status
+) => {
+
+    if (!["ADMIN", "SUPER_ADMIN"].includes(actor.role)) {
+        throw new AppError("Not authorized", 403);
+    }
+
+
+    const safeLimit = Math.min(limit, 50);
+    const skip = (page - 1) * safeLimit;
+
+
+    const whereClause = {
+        hostelId,
+        ...(status && { status })
+    };
+
+    const [complaints, total] = await Promise.all([
+        prisma.complaint.findMany({
+            where: whereClause,
+            include: {
+                user: {
+                    select: {
+                        name: true,
+                        room: { select: { roomNo: true } }
+                    }
+                },
+
+                comments: {
+                    take: 3,
+                    orderBy: { createdAt: "desc" },
+                    include: {
+                        user: { select: { name: true, role: true } }
+                    }
+                }
+            },
+            orderBy: { createdAt: "desc" },
+            skip,
+            take: safeLimit
+        }),
+
+        prisma.complaint.count({ where: whereClause })
+    ]);
+
+    logger.info("Admin fetched complaints", {
+        actorId: actor.id,
+        actorRole: actor.role,
+        hostelId,
+        page,
+        limit: safeLimit,
+        status
+    });
+
+    return {
+        complaints,
+        pagination: {
+            page,
+            limit: safeLimit,
+            total,
+            totalPages: Math.ceil(total / safeLimit)
         }
-    })
-    return updatecomplaintstatus;
+    };
+};
+
+export const getSuperAdminComplaintsService = async (page = 1, limit = 20, actor) => {
+    const skip = (page - 1) * limit;
+
+    const [complaints, total] = await Promise.all([
+        prisma.complaint.findMany({
+            include: {
+                user: {
+                    select: { name: true },
+                },
+                hostel: {
+                    select: { name: true }
+                },
+                comments: {
+                    include: { user: { select: { name: true, role: true } } },
+                    orderBy: { createdAt: 'asc' }
+                }
+            },
+            orderBy: { createdAt: "desc" },
+            skip,
+            take: limit
+        }),
+        prisma.complaint.count()
+    ]);
+
+    return {
+        complaints,
+        pagination: { page, limit, total, totalPages: Math.ceil(total / limit) }
+    };
+}
+
+export const addComplaintCommentService = async (complaintId, userId, content) => {
+    const complaint = await prisma.complaint.findUnique({
+        where: { id: complaintId }
+    });
+    if (!complaint) throw new AppError("Complaint not found", 404);
+
+    return await prisma.complaintComment.create({
+        data: {
+            complaintId,
+            userId,
+            content
+        },
+        include: {
+            user: { select: { name: true, role: true } }
+        }
+    });
 }
