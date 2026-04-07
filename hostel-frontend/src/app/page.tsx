@@ -81,18 +81,33 @@ export default function LandingPage() {
           </div>
 
           {/* Trust Indicators */}
-          <div className="mt-12 sm:mt-16 flex flex-wrap justify-center items-center gap-4 sm:gap-8 text-xs sm:text-sm text-muted-foreground px-4">
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-green-500" />
-              <span>No credit card required</span>
+          <div className="mt-12 sm:mt-16 grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-8 px-4 max-w-3xl mx-auto">
+            <div className="flex flex-col items-center gap-2 p-4 rounded-lg bg-muted/30">
+              <CheckCircle2 className="w-5 h-5 text-green-500" />
+              <span className="text-xs sm:text-sm font-medium">No credit card required</span>
             </div>
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-green-500" />
-              <span>14-day free trial</span>
+            <div className="flex flex-col items-center gap-2 p-4 rounded-lg bg-muted/30">
+              <CheckCircle2 className="w-5 h-5 text-green-500" />
+              <span className="text-xs sm:text-sm font-medium">14-day free trial</span>
             </div>
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-green-500" />
-              <span>Cancel anytime</span>
+            <div className="flex flex-col items-center gap-2 p-4 rounded-lg bg-muted/30">
+              <CheckCircle2 className="w-5 h-5 text-green-500" />
+              <span className="text-xs sm:text-sm font-medium">Cancel anytime</span>
+            </div>
+          </div>
+
+          {/* Social Proof */}
+          <div className="mt-12 sm:mt-16 text-center px-4">
+            <p className="text-sm text-muted-foreground mb-6">Trusted by hostel owners across India</p>
+            <div className="flex flex-wrap justify-center items-center gap-8 opacity-60">
+              <div className="text-2xl font-bold text-muted-foreground">500+</div>
+              <div className="text-sm text-muted-foreground">Active Hostels</div>
+              <div className="h-8 w-px bg-border hidden sm:block" />
+              <div className="text-2xl font-bold text-muted-foreground">10K+</div>
+              <div className="text-sm text-muted-foreground">Happy Residents</div>
+              <div className="h-8 w-px bg-border hidden sm:block" />
+              <div className="text-2xl font-bold text-muted-foreground">99.9%</div>
+              <div className="text-sm text-muted-foreground">Uptime</div>
             </div>
           </div>
         </section>
@@ -231,6 +246,89 @@ export default function LandingPage() {
           </div>
         </section>
 
+        {/* ===================== Testimonials Section ===================== */}
+        <section className="w-full py-12 sm:py-16 md:py-24 bg-background">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-10 sm:mb-12 md:mb-16">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 sm:mb-4 tracking-tight">Loved by Hostel Owners</h2>
+              <p className="text-sm sm:text-base text-muted-foreground max-w-2xl mx-auto px-4">
+                See what our customers have to say about HostelFlow
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
+              {/* Testimonial 1 */}
+              <div className="bg-card border rounded-2xl p-6 sm:p-8 space-y-4">
+                <div className="flex gap-1">
+                  {[...Array(5)].map((_, i) => (
+                    <svg key={i} className="w-4 h-4 sm:w-5 sm:h-5 fill-yellow-400" viewBox="0 0 20 20">
+                      <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
+                    </svg>
+                  ))}
+                </div>
+                <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
+                  "HostelFlow transformed how we manage our 200-bed facility. Payment tracking is now effortless, and our residents love the food menu feature!"
+                </p>
+                <div className="flex items-center gap-3 pt-4 border-t">
+                  <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center text-indigo-600 font-semibold">
+                    RK
+                  </div>
+                  <div>
+                    <p className="font-semibold text-sm">Rajesh Kumar</p>
+                    <p className="text-xs text-muted-foreground">Owner, Delhi Hostel</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Testimonial 2 */}
+              <div className="bg-card border rounded-2xl p-6 sm:p-8 space-y-4">
+                <div className="flex gap-1">
+                  {[...Array(5)].map((_, i) => (
+                    <svg key={i} className="w-4 h-4 sm:w-5 sm:h-5 fill-yellow-400" viewBox="0 0 20 20">
+                      <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
+                    </svg>
+                  ))}
+                </div>
+                <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
+                  "Managing 5 hostels was a nightmare before HostelFlow. Now I can oversee everything from one dashboard. The complaint system is a game-changer!"
+                </p>
+                <div className="flex items-center gap-3 pt-4 border-t">
+                  <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center text-emerald-600 font-semibold">
+                    PS
+                  </div>
+                  <div>
+                    <p className="font-semibold text-sm">Priya Sharma</p>
+                    <p className="text-xs text-muted-foreground">Super Admin, Mumbai Chain</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Testimonial 3 */}
+              <div className="bg-card border rounded-2xl p-6 sm:p-8 space-y-4">
+                <div className="flex gap-1">
+                  {[...Array(5)].map((_, i) => (
+                    <svg key={i} className="w-4 h-4 sm:w-5 sm:h-5 fill-yellow-400" viewBox="0 0 20 20">
+                      <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
+                    </svg>
+                  ))}
+                </div>
+                <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
+                  "The online payment integration saved us countless hours. Students can pay from their phones, and we get instant notifications. Highly recommended!"
+                </p>
+                <div className="flex items-center gap-3 pt-4 border-t">
+                  <div className="w-10 h-10 rounded-full bg-orange-100 dark:bg-orange-900/40 flex items-center justify-center text-orange-600 font-semibold">
+                    AM
+                  </div>
+                  <div>
+                    <p className="font-semibold text-sm">Amit Mehta</p>
+                    <p className="text-xs text-muted-foreground">Admin, Bangalore PG</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* ===================== Final CTA ===================== */}
         <section className="w-full py-12 sm:py-16 md:py-24 text-center">
            <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6 sm:space-y-8">
@@ -269,9 +367,9 @@ export default function LandingPage() {
           <div>
             <h4 className="font-semibold mb-3 sm:mb-4 text-xs sm:text-sm">Legal</h4>
             <ul className="space-y-2 sm:space-y-3 text-xs sm:text-sm text-muted-foreground">
-              <li><Link href="#" className="hover:text-foreground transition-colors">Privacy Policy</Link></li>
-              <li><Link href="#" className="hover:text-foreground transition-colors">Terms of Service</Link></li>
-              <li><Link href="#" className="hover:text-foreground transition-colors">Contact Support</Link></li>
+              <li><Link href="/privacy" className="hover:text-foreground transition-colors">Privacy Policy</Link></li>
+              <li><Link href="/terms" className="hover:text-foreground transition-colors">Terms of Service</Link></li>
+              <li><Link href="/contact" className="hover:text-foreground transition-colors">Contact Support</Link></li>
             </ul>
           </div>
         </div>
