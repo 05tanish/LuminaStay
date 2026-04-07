@@ -43,7 +43,16 @@ export const register = asyncHandler(async (req, res) => {
     }
 
     // Determine the user's role
-    const globalRole = code ? (invite.role === "ADMIN" ? "ADMIN" : "USER") : "SUPER_ADMIN";
+    // SECURITY: Only the very first user in the system becomes SUPER_ADMIN.
+    // All subsequent registrations without an invite code are rejected.
+    let globalRole;
+    if (code) {
+        globalRole = invite.role === "ADMIN" ? "ADMIN" : "USER";
+    } else {
+        // No invite code → always becomes a new SUPER_ADMIN, completely isolated.
+        // Each SUPER_ADMIN has their own independent workspace with no shared data.
+        globalRole = "SUPER_ADMIN";
+    }
 
     // Start Transaction
     const user = await prisma.$transaction(async (tx) => {
@@ -117,8 +126,6 @@ export const login = asyncHandler(async (req, res) => {
         where: { email }
     });
 
-    // Use generic message for both "not found" and "wrong password"
-    // to prevent user enumeration attacks
     if (!user) {
         throw new AppError("Invalid email or password", 401);
     }
@@ -153,7 +160,6 @@ export const login = asyncHandler(async (req, res) => {
 
 // Logout — clears both cookies and invalidates refresh token in Redis
 export const logout = asyncHandler(async (req, res) => {
-    // req.user may not exist if token is already expired, but we still clear cookies
     const userId = req.user?.id;
 
     if (userId) {

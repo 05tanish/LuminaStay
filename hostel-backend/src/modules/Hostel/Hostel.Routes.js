@@ -5,11 +5,15 @@ import {
   getHostels,
   getHostelById,
   updateHostel,
-  deleteHostel
+  deleteHostel,
+  transferHostel,
+  getHostelStats
 } from "../Hostel/Hostel.Controller.js";
 
 import { protect } from "../../middleware/Authentification.Middleware.js";
 import { authorize } from "../../middleware/authorization.Middleware.js";
+import { validate } from "../../middleware/Validate.Middleware.js";
+import { createHostelSchema, updateHostelSchema, transferHostelSchema } from "./Hostel.Schema.js";
 
 const router = Router();
 
@@ -44,7 +48,7 @@ const router = Router();
  *       201:
  *         description: Hostel created successfully
  */
-router.post("/", protect, authorize("SUPERADMIN"), createHostel);
+router.post("/", protect, authorize("SUPER_ADMIN"), validate(createHostelSchema), createHostel);
 /**
  * @swagger
  * /api/hostel:
@@ -117,7 +121,7 @@ router.get("/:id", protect, getHostelById);
  *       200:
  *         description: Hostel updated
  */
-router.put("/:id", protect, authorize("ADMIN"), updateHostel);
+router.put("/:id", protect, authorize("SUPER_ADMIN"), validate(updateHostelSchema), updateHostel);
 /**
  * @swagger
  * /api/hostel/{id}:
@@ -136,6 +140,38 @@ router.put("/:id", protect, authorize("ADMIN"), updateHostel);
  *       200:
  *         description: Hostel deleted
  */
-router.delete("/:id", protect, authorize("ADMIN"), deleteHostel);
+router.delete("/:id", protect, authorize("SUPER_ADMIN"), deleteHostel);
+
+/**
+ * @swagger
+ * /api/hostel/{id}/transfer:
+ *   post:
+ *     summary: Transfer users and rooms from one hostel to another
+ *     tags: [Hostel]
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [targetHostelId]
+ *             properties:
+ *               targetHostelId:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Transef completed
+ */
+router.post("/:id/transfer", protect, authorize("SUPER_ADMIN"), validate(transferHostelSchema), transferHostel);
+
+router.get("/:id/stats", protect, authorize("ADMIN", "SUPER_ADMIN"), getHostelStats);
 
 export default router;

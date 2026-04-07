@@ -2,7 +2,8 @@ import { prisma } from "../../config/db.js";
 import AppError from "../../utils/AppError.js";
 import { hash_password } from "../../utils/hash.js";
 import { auditLog } from "../../utils/audit.js";
-import { prisma } from "../../config/db.js";
+import { logger } from "../../utils/logger.js";
+
 
 const ROLE_LEVELS = {
   SUPER_ADMIN: 3,
@@ -10,19 +11,46 @@ const ROLE_LEVELS = {
   USER: 1
 };
 
-// get all user service 
-export const getUsersService = async (page = 1, limit = 20, search = "") => {
+// get all user service — scoped by role:
+// ADMIN: only sees USER-role residents in their own hostel
+// SUPER_ADMIN: sees all users (excluding other SUPER_ADMINs) in their own hostels only
+export const getUsersService = async (page = 1, limit = 20, search = "", actorRole = "ADMIN", actorHostelId = null, actorId = null) => {
   const skip = (page - 1) * limit;
 
-  const where = search
-    ? {
+  // Base where clause — scoped by role
+  let where = {};
+
+  if (actorRole === "ADMIN") {
+    // Admin sees only USER-role residents from their own hostel
+    where = {
+      role: "USER",
+      hostelId: actorHostelId,
+    };
+  } else if (actorRole === "SUPER_ADMIN") {
+    // Super admin sees users only from their own hostels (via UserHostel)
+    const myHostelLinks = await prisma.userHostel.findMany({
+      where: { userId: actorId },
+      select: { hostelId: true }
+    });
+    const myHostelIds = myHostelLinks.map(h => h.hostelId);
+
+    where = {
+      role: { not: "SUPER_ADMIN" },
+      hostelId: { in: myHostelIds }
+    };
+  }
+
+  // Apply search on top of role/hostel filter
+  if (search) {
+    where = {
+      ...where,
       OR: [
         { name: { contains: search, mode: "insensitive" } },
         { email: { contains: search, mode: "insensitive" } },
         { phone: { contains: search, mode: "insensitive" } },
       ],
-    }
-    : {};
+    };
+  }
 
   const [users, total] = await Promise.all([
     prisma.user.findMany({
@@ -39,6 +67,7 @@ export const getUsersService = async (page = 1, limit = 20, search = "") => {
         hostel: { select: { id: true, name: true } },
         room: { select: { id: true, roomNo: true } },
         bed: { select: { id: true, bedNo: true } },
+        userDetails: true,
       },
       orderBy: { createdAt: "desc" },
       skip,
@@ -212,7 +241,7 @@ export const deleteUserService = async (actor, userId) => {
 
   const targetUser = await prisma.user.findUnique({
     where: { id: userId },
-    select: { id: true, role: true, name: true, email: true, phone: true }
+    select: { id: true, role: true, name: true, email: true, phone: true, hostelId: true }
   });
 
   if (!targetUser) {
@@ -221,6 +250,16 @@ export const deleteUserService = async (actor, userId) => {
 
   if (actor.id === userId) {
     throw new AppError("You cannot delete yourself", 400);
+  }
+
+  // SUPER_ADMIN can only delete users from their own hostels
+  if (actor.role === "SUPER_ADMIN" && targetUser.hostelId) {
+    const ownership = await prisma.userHostel.findFirst({
+      where: { userId: actor.id, hostelId: targetUser.hostelId }
+    });
+    if (!ownership) {
+      throw new AppError("User not found in your workspace", 404);
+    }
   }
 
   const actorRoleLevel = ROLE_LEVELS[actor.role];
@@ -268,7 +307,7 @@ export const deleteUserService = async (actor, userId) => {
     return result;
 
   } catch (error) {
-    console.error(error);
+    logger.error("Failed to delete user", { userId, error: error.message });
 
     throw new AppError(
       error.message || "Failed to delete user",
@@ -452,4 +491,96 @@ export const updateProfileRequestStatusService = async (
   });
 
   return result;
+};
+
+// Get single user with full details (for super admin user detail view)
+export const getSingleUserService = async (userId, actor) => {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      phone: true,
+      role: true,
+      hostelId: true,
+      roomId: true,
+      createdAt: true,
+      emailVerified: true,
+      hostel: { select: { id: true, name: true, address: true } },
+      room: { select: { id: true, roomNo: true } },
+      bed: { select: { id: true, bedNo: true } },
+      userDetails: true,
+      complaints: {
+        select: { id: true, title: true, status: true, createdAt: true },
+        orderBy: { createdAt: "desc" },
+        take: 5,
+      },
+      monthlyFees: {
+        select: { id: true, month: true, amount: true, status: true, dueDate: true },
+        orderBy: { createdAt: "desc" },
+        take: 5,
+      },
+    },
+  });
+
+  if (!user) throw new AppError("User not found", 404);
+
+  // SUPER_ADMIN can only see users from their own hostels
+  if (actor.role === "SUPER_ADMIN" && user.hostelId) {
+    const ownership = await prisma.userHostel.findFirst({
+      where: { userId: actor.id, hostelId: user.hostelId }
+    });
+    if (!ownership) {
+      throw new AppError("User not found in your workspace", 404);
+    }
+  }
+
+  // SUPER_ADMIN users cannot see other SUPER_ADMIN users
+  if (user.role === "SUPER_ADMIN" && actor.role !== "SUPER_ADMIN") {
+    throw new AppError("Access denied", 403);
+  }
+
+  return user;
+};
+
+// Hard delete — removes user and all related data completely
+export const hardDeleteUserService = async (actor, userId) => {
+  const targetUser = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true, role: true, name: true, email: true, hostelId: true },
+  });
+
+  if (!targetUser) throw new AppError("User not found", 404);
+  if (actor.id === userId) throw new AppError("You cannot delete yourself", 400);
+
+  // SUPER_ADMIN can only delete users from their own hostels
+  if (actor.role === "SUPER_ADMIN" && targetUser.hostelId) {
+    const ownership = await prisma.userHostel.findFirst({
+      where: { userId: actor.id, hostelId: targetUser.hostelId }
+    });
+    if (!ownership) {
+      throw new AppError("User not found in your workspace", 404);
+    }
+  }
+
+  // Only SUPER_ADMIN can hard-delete anyone; ADMIN can only hard-delete USER role
+  if (actor.role === "ADMIN" && targetUser.role !== "USER") {
+    throw new AppError("Admins can only delete residents", 403);
+  }
+  if (actor.role === "ADMIN" && targetUser.role === "SUPER_ADMIN") {
+    throw new AppError("Cannot delete a Super Admin", 403);
+  }
+
+  await prisma.$transaction(async (tx) => {
+    // Free bed
+    await tx.bed.updateMany({ where: { userId }, data: { userId: null } });
+    // Remove hostel memberships
+    await tx.userHostel.deleteMany({ where: { userId } });
+    // Delete the user (cascade handles related records per schema)
+    await tx.user.delete({ where: { id: userId } });
+  });
+
+  logger.info("User hard deleted", { actorId: actor.id, targetId: userId });
+  return { id: userId, name: targetUser.name };
 };

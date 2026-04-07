@@ -23,15 +23,28 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Building2, Plus, Trash2 } from "lucide-react";
+import { Building2, Plus, Trash2, ArrowRightLeft, Search, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+import { api } from "@/lib/axios";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function HostelsManagement() {
-  const { data: hostels, isLoading } = useHostels(1, 100);
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState("");
+  const { data: result, isLoading } = useHostels(page, 10, search);
+  const hostels = result?.hostels || [];
+  const pagination = result?.pagination;
+  const router = useRouter();
+  const queryClient = useQueryClient();
+
   const createHostel = useCreateHostel();
   const deleteHostel = useDeleteHostel();
   
   const [isOpen, setIsOpen] = useState(false);
+  const [isTransferOpen, setIsTransferOpen] = useState(false);
+  const [transferHostelId, setTransferHostelId] = useState("");
+  const [targetHostelId, setTargetHostelId] = useState("");
   const [formData, setFormData] = useState({ name: "", address: "" });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -49,22 +62,48 @@ export default function HostelsManagement() {
   };
 
   const handleDelete = (id: string, name: string) => {
-    if (window.confirm(`Are you sure you want to delete "${name}"? This cannot be undone.`)) {
+    if (window.confirm(`Are you sure you want to delete "${name}"? This will soft delete it if no users are active.`)) {
       deleteHostel.mutate(id, {
         onSuccess: () => toast.success("Hostel deleted"),
-        onError: () => toast.error("Failed to delete. Ensure hostel has no active data.")
+        onError: () => toast.error("Failed to delete. Try transferring users first.")
       });
+    }
+  };
+
+  const handleTransfer = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await api.post(`/hostel/${transferHostelId}/transfer`, { targetHostelId });
+      toast.success("Hostel transferred successfully");
+      setIsTransferOpen(false);
+      queryClient.invalidateQueries({ queryKey: ["hostels"] });
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Failed to transfer hostel");
     }
   };
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Hostels</h1>
           <p className="text-muted-foreground">Manage all connected hostels in the system.</p>
         </div>
         
+        <div className="flex gap-2">
+          <div className="relative">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="search"
+              placeholder="Search hostels..."
+              className="pl-8 w-[250px]"
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
+            />
+          </div>
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
           <DialogTrigger render={<Button className="gap-2" />}>
             <Plus className="w-4 h-4" /> Add Hostel
@@ -105,6 +144,51 @@ export default function HostelsManagement() {
             </form>
           </DialogContent>
         </Dialog>
+
+        {/* Transfer Dialog */}
+        <Dialog open={isTransferOpen} onOpenChange={setIsTransferOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Transfer Hostel Data</DialogTitle>
+              <DialogDescription>
+                Transfer all users, complaints, and valid rooms to another hostel, then soft-delete this hostel.
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleTransfer} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="targetHostel">Select Target Hostel</Label>
+                <select
+                  id="targetHostel"
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  value={targetHostelId}
+                  onChange={(e) => setTargetHostelId(e.target.value)}
+                  required
+                >
+                  <option value="">-- Select a hostel --</option>
+                  {hostels
+                    .filter((h: Hostel) => h.id !== transferHostelId)
+                    .map((h: Hostel) => (
+                      <option key={h.id} value={h.id}>
+                        {h.name} - {h.address}
+                      </option>
+                    ))}
+                </select>
+                <p className="text-xs text-muted-foreground">
+                  Choose the destination hostel for all data transfer
+                </p>
+              </div>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setIsTransferOpen(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={!targetHostelId}>
+                  Complete Transfer
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+        </div>
       </div>
 
       <Card>
@@ -137,14 +221,33 @@ export default function HostelsManagement() {
                     <TableCell>{hostel.address}</TableCell>
                     <TableCell>{new Date(hostel.createdAt).toLocaleDateString()}</TableCell>
                     <TableCell className="text-right">
-                      <Button 
-                        variant="destructive" 
-                        size="icon"
-                        onClick={() => handleDelete(hostel.id, hostel.name)}
-                        disabled={deleteHostel.isPending}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => router.push(`/dashboard/superadmin/hostels/${hostel.id}`)}
+                        >
+                          View Stats
+                        </Button>
+                        <Button 
+                          variant="secondary" 
+                          size="icon"
+                          onClick={() => {
+                            setTransferHostelId(hostel.id);
+                            setIsTransferOpen(true);
+                          }}
+                        >
+                          <ArrowRightLeft className="w-4 h-4" />
+                        </Button>
+                        <Button 
+                          variant="destructive" 
+                          size="icon"
+                          onClick={() => handleDelete(hostel.id, hostel.name)}
+                          disabled={deleteHostel.isPending}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -152,6 +255,31 @@ export default function HostelsManagement() {
             </Table>
           )}
         </CardContent>
+        {pagination && pagination.totalPages > 1 && (
+          <div className="p-4 border-t flex items-center justify-between text-sm text-muted-foreground">
+            <div>
+              Showing page {pagination.page} of {pagination.totalPages}
+            </div>
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                disabled={page === 1} 
+                onClick={() => setPage(page - 1)}
+              >
+                <ChevronLeft className="w-4 h-4 mr-1" /> Prev
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                disabled={page === pagination.totalPages} 
+                onClick={() => setPage(page + 1)}
+              >
+                Next <ChevronRight className="w-4 h-4 ml-1" />
+              </Button>
+            </div>
+          </div>
+        )}
       </Card>
     </div>
   );

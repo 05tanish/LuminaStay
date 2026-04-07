@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { useAdminFees, useCreateFee, useRecordCashPayment } from "@/hooks/use-api";
+import { useAdminFees, useCreateFee, useRecordCashPayment, useUsers } from "@/hooks/use-api";
 import { StatusBadge } from "@/components/status-badge";
 import { Loader2, Plus, CreditCard, Banknote } from "lucide-react";
 
@@ -70,9 +70,11 @@ export default function AdminPaymentsPage() {
   const { data, isLoading } = useAdminFees({ page, limit: 20, status: statusFilter });
   const { mutate: createFee, isPending: creatingFee } = useCreateFee();
   const { mutate: recordCash, isPending: recordingCash } = useRecordCashPayment();
-
-  const fees: any[] = data?.data ?? [];
-  const total: number = data?.total ?? 0;
+  const { data: usersData, isLoading: loadingUsers } = useUsers();
+  
+  const fees: any[] = data?.fees ?? data?.data ?? [];
+  const allUsers: any[] = usersData?.users ?? usersData?.data ?? [];
+  const total: number = data?.pagination?.total ?? data?.total ?? 0;
   const totalPages = Math.ceil(total / 20);
 
   const feeForm = useForm<CreateFeeValues>({
@@ -170,7 +172,24 @@ export default function AdminPaymentsPage() {
           <Form {...feeForm}>
             <form onSubmit={feeForm.handleSubmit(onCreateFee)} className="space-y-4 pt-2">
               <FormField control={feeForm.control} name="userId" render={({ field }) => (
-                <FormItem><FormLabel>User ID</FormLabel><FormControl><Input placeholder="Paste user ID" {...field} /></FormControl><FormMessage /></FormItem>
+                <FormItem>
+                  <FormLabel>Resident</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder={loadingUsers ? "Loading residents..." : "Select a resident"} />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {allUsers.map((u) => (
+                        <SelectItem key={u.id} value={u.id}>
+                          {u.name} ({u.email})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
               )} />
               <FormField control={feeForm.control} name="month" render={({ field }) => (
                 <FormItem><FormLabel>Month (YYYY-MM)</FormLabel><FormControl><Input placeholder="2026-04" {...field} /></FormControl><FormMessage /></FormItem>
@@ -200,7 +219,22 @@ export default function AdminPaymentsPage() {
                 <FormItem><FormLabel>Monthly Fee ID</FormLabel><FormControl><Input placeholder="Fee record ID" {...field} /></FormControl><FormMessage /></FormItem>
               )} />
               <FormField control={cashForm.control} name="userId" render={({ field }) => (
-                <FormItem><FormLabel>User ID</FormLabel><FormControl><Input placeholder="User ID" {...field} /></FormControl><FormMessage /></FormItem>
+                <FormItem>
+                  <FormLabel>Resident</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value} disabled>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecting resident..." />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value={field.value}>
+                        {allUsers.find(u => u.id === field.value)?.name || field.value}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
               )} />
               <FormField control={cashForm.control} name="transactionId" render={({ field }) => (
                 <FormItem><FormLabel>Transaction ID (Optional)</FormLabel><FormControl><Input placeholder="Receipt number" {...field} /></FormControl><FormMessage /></FormItem>

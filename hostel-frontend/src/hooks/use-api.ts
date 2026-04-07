@@ -12,7 +12,9 @@ import {
   notificationApi,
   paymentApi,
   roomApi,
+  superAdminApi,
   usersApi,
+  authApi,
 } from "@/lib/api";
 
 // ─── QUERY KEYS ──────────────────────────────────────────────────────────────
@@ -31,13 +33,17 @@ export const QK = {
 
 // ─── HOSTELS ─────────────────────────────────────────────────────────────────
 
-export function useHostels() {
+export function useHostels(page = 1, search = "") {
   return useQuery({
-    queryKey: QK.hostels,
+    queryKey: ["hostels", page, search],
     queryFn: async () => {
-      const res = await hostelApi.getAll({ page: 1, limit: 100 });
-      return res.data.data?.hostels || res.data.data || [];
+      const res = await hostelApi.getAll({ page, limit: 10, search });
+      // Backend returns { success, data: { hostels, pagination } }
+      // Return the full object so consumers can access .hostels and .pagination
+      return res.data.data; // { hostels: [...], pagination: {...} }
     },
+    refetchInterval: 30000,
+    staleTime: 20000,
   });
 }
 
@@ -63,15 +69,71 @@ export function useAssignAdmin() {
   });
 }
 
+// ─── SUPER ADMIN ─────────────────────────────────────────────────────────────
+
+export function usePlatformStats() {
+  return useQuery({
+    queryKey: ["platform-stats"],
+    queryFn: async () => {
+      const res = await superAdminApi.getStats();
+      return res.data.data;
+    },
+    refetchInterval: 30000, // Refetch every 30 seconds
+    staleTime: 20000, // Consider data stale after 20 seconds
+  });
+}
+
+export function useAdmins() {
+  return useQuery({
+    queryKey: ["admins"],
+    queryFn: async () => {
+      const res = await superAdminApi.getAdmins();
+      return res.data.data;
+    },
+  });
+}
+
+export function useReassignAdmin() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ userId, hostelId }: { userId: string; hostelId: string }) =>
+      superAdminApi.reassignAdmin(userId, hostelId),
+    onSuccess: () => {
+      toast.success("Admin reassigned successfully");
+      qc.invalidateQueries({ queryKey: ["admins"] });
+    },
+    onError: (e: any) =>
+      toast.error(e.response?.data?.message || "Failed to reassign admin"),
+  });
+}
+
+export function useDeleteAdmin() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: superAdminApi.deleteAdmin,
+    onSuccess: () => {
+      toast.success("Admin removed");
+      qc.invalidateQueries({ queryKey: ["admins"] });
+    },
+    onError: (e: any) =>
+      toast.error(e.response?.data?.message || "Failed to remove admin"),
+  });
+}
+
 // ─── ROOMS ───────────────────────────────────────────────────────────────────
 
 export function useRooms(hostelId?: string) {
   return useQuery({
     queryKey: QK.rooms(hostelId),
     queryFn: async () => {
+      // Pass hostelId if available; backend falls back to session hostelId
       const res = await roomApi.getAll(hostelId);
       return res.data.data;
     },
+    // Always fetch — backend uses session hostelId if no param provided
+    enabled: true,
+    refetchInterval: 30000,
+    staleTime: 20000,
   });
 }
 
@@ -105,7 +167,7 @@ export function useAssignBed() {
 export function useVacateBed() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: roomApi.vacateBed,
+    mutationFn: (bedId: string) => roomApi.vacateBed(bedId),
     onSuccess: () => {
       toast.success("Bed vacated successfully");
       qc.invalidateQueries({ queryKey: ["rooms"] });
@@ -113,6 +175,32 @@ export function useVacateBed() {
     },
     onError: (e: any) =>
       toast.error(e.response?.data?.message || "Failed to vacate bed"),
+  });
+}
+
+// ─── AUTH & PROFILE ──────────────────────────────────────────────────────────
+
+export function useUpdateProfile() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: authApi.updateProfile,
+    onSuccess: () => {
+      toast.success("Profile updated successfully");
+      qc.invalidateQueries({ queryKey: ["user", "me"] });
+    },
+    onError: (e: any) =>
+      toast.error(e.response?.data?.message || "Failed to update profile"),
+  });
+}
+
+export function useRequestProfileUpdate() {
+  return useMutation({
+    mutationFn: authApi.requestProfileUpdate,
+    onSuccess: () => {
+      toast.success("Profile update request submitted to admin!");
+    },
+    onError: (e: any) =>
+      toast.error(e.response?.data?.message || "Failed to submit request"),
   });
 }
 
@@ -125,6 +213,8 @@ export function useUsers(search?: string, page = 1) {
       const res = await usersApi.getAll({ search, page, limit: 20 });
       return res.data.data;
     },
+    refetchInterval: 60000, // Refetch every minute
+    staleTime: 45000,
   });
 }
 
@@ -154,6 +244,30 @@ export function useDeleteUser() {
   });
 }
 
+export function useProfileRequests() {
+  return useQuery({
+    queryKey: ["profile-requests"],
+    queryFn: async () => {
+      const res = await usersApi.getProfileRequests();
+      return res.data.data;
+    },
+  });
+}
+
+export function useRespondProfileRequest() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, status, adminComment }: { id: string; status: string; adminComment?: string }) =>
+      usersApi.respondProfileRequest(id, { status, adminComment }),
+    onSuccess: () => {
+      toast.success("Request updated");
+      qc.invalidateQueries({ queryKey: ["profile-requests"] });
+    },
+    onError: (e: any) =>
+      toast.error(e.response?.data?.message || "Failed to update request"),
+  });
+}
+
 // ─── COMPLAINTS ───────────────────────────────────────────────────────────────
 
 export function useComplaints(page = 1) {
@@ -163,6 +277,18 @@ export function useComplaints(page = 1) {
       const res = await complaintApi.getAll({ page, limit: 20 });
       return res.data.data;
     },
+  });
+}
+
+export function useAdminComplaints(page = 1) {
+  return useQuery({
+    queryKey: ["admin-complaints", page],
+    queryFn: async () => {
+      const res = await complaintApi.getAdminComplaints({ page, limit: 20 });
+      return res.data.data;
+    },
+    refetchInterval: 30000, // Refetch every 30 seconds for real-time updates
+    staleTime: 20000,
   });
 }
 
@@ -208,11 +334,11 @@ export function useDeleteComplaint() {
 
 // ─── FOOD ────────────────────────────────────────────────────────────────────
 
-export function useFoodWeekly() {
+export function useFoodWeekly(startDate?: string) {
   return useQuery({
-    queryKey: QK.foodWeekly,
+    queryKey: [...QK.foodWeekly, startDate],
     queryFn: async () => {
-      const res = await foodApi.getWeekly();
+      const res = await foodApi.getWeekly(startDate);
       return res.data.data;
     },
   });
@@ -232,7 +358,7 @@ export function useFoodByDate(date: string) {
 export function useUpsertFood() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ date, meals }: { date: string; meals: object }) =>
+    mutationFn: ({ date, meals }: { date: string; meals: { type: string; items: string[] }[] }) =>
       foodApi.upsert(date, meals),
     onSuccess: () => {
       toast.success("Menu saved successfully");
@@ -291,6 +417,16 @@ export function useRecordCashPayment() {
   });
 }
 
+export function useRevenue() {
+  return useQuery({
+    queryKey: ["revenue"],
+    queryFn: async () => {
+      const res = await paymentApi.getRevenue();
+      return res.data.data;
+    },
+  });
+}
+
 // ─── NOTIFICATIONS ────────────────────────────────────────────────────────────
 
 export function useNotifications(page = 1) {
@@ -345,5 +481,39 @@ export function useCreateInvite() {
     },
     onError: (e: any) =>
       toast.error(e.response?.data?.message || "Failed to create invite"),
+  });
+}
+
+export function useAllInvites() {
+  return useQuery({
+    queryKey: [...QK.invites("all"), "global"],
+    queryFn: async () => {
+      const res = await inviteApi.getGlobalAll();
+      return res.data.data;
+    },
+  });
+}
+
+export function useDeleteInvite() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: inviteApi.delete,
+    onSuccess: () => {
+      toast.success("Invite deleted");
+      qc.invalidateQueries({ queryKey: ["invites"] });
+    },
+    onError: (e: any) =>
+      toast.error(e.response?.data?.message || "Failed to delete invite"),
+  });
+}
+
+export function useSendEmailShare() {
+  return useMutation({
+    mutationFn: inviteApi.sendEmailShare,
+    onSuccess: () => {
+      toast.success("Email sent successfully");
+    },
+    onError: (e: any) =>
+      toast.error(e.response?.data?.message || "Failed to send email"),
   });
 }

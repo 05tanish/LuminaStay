@@ -1,143 +1,54 @@
 import express from "express";
-import { createcomplaint, deletecomplaint, getcomplaint, updatecomplaint, updatecomplaintstatus, getAdminComplaints, getSuperAdminComplaints, addComplaintComment } from "./Complaint.Controller.js";
+import {
+  createcomplaint,
+  deletecomplaint,
+  getcomplaint,
+  updatecomplaint,
+  updatecomplaintstatus,
+  getAdminComplaints,
+  getSuperAdminComplaints,
+  addComplaintComment,
+  getComplaintComments
+} from "./Complaint.Controller.js";
 import { protect } from "../../middleware/Authentification.Middleware.js";
 import { authorize } from "../../middleware/authorization.Middleware.js";
+import { validate } from "../../middleware/Validate.Middleware.js";
+import {
+  createComplaintSchema,
+  updateComplaintSchema,
+  updateComplaintStatusSchema,
+  addCommentSchema
+} from "./Complaint.Schema.js";
+
 const router = express.Router();
 
-/**
- * @swagger
- * tags:
- *   name: Complaint
- *   description: Student Complaints Management
- */
+// ─── STATIC ROUTES FIRST (must come before /:complaintID) ────────────────────
 
-/**
- * @swagger
- * /api/complaint:
- *   post:
- *     summary: Create a new complaint
- *     tags: [Complaint]
- *     security:
- *       - cookieAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required: [title, description]
- *             properties:
- *               title:
- *                 type: string
- *               description:
- *                 type: string
- *     responses:
- *       201:
- *         description: Complaint created successfully
- */
-router.post("/", protect, createcomplaint);
-/**
- * @swagger
- * /api/complaint/{complaintID}:
- *   delete:
- *     summary: Delete a complaint
- *     tags: [Complaint]
- *     security:
- *       - cookieAuth: []
- *     parameters:
- *       - in: path
- *         name: complaintID
- *         required: true
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: Complaint deleted
- *       403:
- *         description: Not authorized to delete this complaint
- */
-router.delete("/:complaintID", protect, deletecomplaint);
-/**
- * @swagger
- * /api/complaint:
- *   get:
- *     summary: Get all complaints (with pagination)
- *     tags: [Complaint]
- *     security:
- *       - cookieAuth: []
- *     parameters:
- *       - in: query
- *         name: page
- *         schema:
- *           type: integer
- *       - in: query
- *         name: limit
- *         schema:
- *           type: integer
- *     responses:
- *       200:
- *         description: List of complaints
- */
+// User: create complaint
+router.post("/", protect, validate(createComplaintSchema), createcomplaint);
+
+// User: get own complaints
 router.get("/", protect, getcomplaint);
-/**
- * @swagger
- * /api/complaint/{complaintID}:
- *   put:
- *     summary: Update a complaint (owner only)
- *     tags: [Complaint]
- *     security:
- *       - cookieAuth: []
- *     parameters:
- *       - in: path
- *         name: complaintID
- *         required: true
- *         schema:
- *           type: string
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               title:
- *                 type: string
- *               description:
- *                 type: string
- *     responses:
- *       200:
- *         description: Complaint updated
- */
-router.put("/:complaintID", protect, updatecomplaint);
-/**
- * @swagger
- * /api/complaint/status:
- *   patch:
- *     summary: Update complaint status (ADMIN only)
- *     tags: [Complaint]
- *     security:
- *       - cookieAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required: [complaintID, status]
- *             properties:
- *               complaintID:
- *                 type: string
- *               status:
- *                 type: string
- *                 enum: [OPEN, IN_PROGRESS, RESOLVED]
- *     responses:
- *       200:
- *         description: Status updated
- */
-router.patch("/status", protect, authorize("ADMIN", "SUPER_ADMIN"), updatecomplaintstatus);
 
+// Admin/SuperAdmin: update status (PATCH /status must be before /:complaintID)
+router.patch("/status", protect, authorize("ADMIN", "SUPER_ADMIN"), validate(updateComplaintStatusSchema), updatecomplaintstatus);
+
+// Admin: get hostel complaints
 router.get("/admin", protect, authorize("ADMIN"), getAdminComplaints);
+
+// SuperAdmin: get all complaints
 router.get("/superadmin", protect, authorize("SUPER_ADMIN"), getSuperAdminComplaints);
-router.post("/:complaintID/comments", protect, addComplaintComment);
+
+// ─── DYNAMIC ROUTES (/:complaintID must come AFTER all static routes) ─────────
+
+// User: update own complaint
+router.put("/:complaintID", protect, validate(updateComplaintSchema), updatecomplaint);
+
+// User/Admin: delete complaint
+router.delete("/:complaintID", protect, deletecomplaint);
+
+// Comments
+router.post("/:complaintID/comments", protect, validate(addCommentSchema), addComplaintComment);
+router.get("/:complaintID/comments", protect, getComplaintComments);
 
 export default router;

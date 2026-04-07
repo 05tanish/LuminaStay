@@ -1,10 +1,12 @@
 import { Router } from 'express'
 import { login, logout, register } from './Auth.Controller.js'
-import { googleLogin } from './GoogleAuth.Controller.js'
+import { googleLogin, googleRegister } from './GoogleAuth.Controller.js'
 import { refreshTokens } from './Refresh.Controller.js'
 import { sendOtp, verifyOtp } from './Otp.Controller.js'
 import { rateLimiter } from '../../middleware/Ratelimiter.js'
 import { protect } from '../../middleware/Authentification.Middleware.js'
+import { validate } from '../../middleware/Validate.Middleware.js'
+import { registerSchema, loginSchema, googleLoginSchema, googleRegisterSchema, sendOtpSchema, verifyOtpSchema } from './Auth.Schema.js'
 
 const router = Router()
 
@@ -49,6 +51,7 @@ const router = Router()
  */
 router.post('/register',
   rateLimiter({ window: 900, limit: 10, message: "Too many registration attempts. Please try again later." }),
+  validate(registerSchema),
   register
 )
 
@@ -81,6 +84,7 @@ router.post('/register',
 // automated brute-force attacks. IP-based since user isn't authenticated yet.
 router.post('/login',
   rateLimiter({ window: 900, limit: 10, message: "Too many login attempts. Please try again in 15 minutes." }),
+  validate(loginSchema),
   login
 )
 
@@ -109,7 +113,15 @@ router.post('/login',
 // Google OAuth — same limits as login since it's also an authentication endpoint
 router.post('/google',
   rateLimiter({ window: 900, limit: 10, message: "Too many login attempts. Please try again in 15 minutes." }),
+  validate(googleLoginSchema),
   googleLogin
+)
+
+// Google Register — email verified by Google, only invite code + name + phone needed
+router.post('/google-register',
+  rateLimiter({ window: 900, limit: 10, message: "Too many registration attempts. Please try again later." }),
+  validate(googleRegisterSchema),
+  googleRegister
 )
 
 /**
@@ -159,6 +171,7 @@ router.post('/refresh',
 // already has its own 60-second cooldown. This catches abuse beyond that.
 router.post('/otp/send',
   rateLimiter({ window: 300, limit: 3, message: "Too many OTP requests. Please wait 5 minutes." }),
+  validate(sendOtpSchema),
   sendOtp
 )
 
@@ -188,6 +201,7 @@ router.post('/otp/send',
  */
 router.post('/otp/verify',
   rateLimiter({ window: 300, limit: 15, message: "Too many verification attempts." }),
+  validate(verifyOtpSchema),
   verifyOtp
 )
 

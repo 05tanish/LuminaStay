@@ -13,13 +13,16 @@ export interface Hostel {
 }
 //0998
 
-export const useHostels = (page = 1, limit = 10) => {
+export const useHostels = (page = 1, limit = 10, search = "") => {
   return useQuery({
-    queryKey: ["hostels", page, limit],
+    queryKey: ["hostels", page, limit, search],
     queryFn: async () => {
-      const { data } = await api.get(`/hostel?page=${page}&limit=${limit}`);
-      return data.data; // Assuming backend returns { success: true, data: [...] }
+      const { data } = await api.get(`/hostel?page=${page}&limit=${limit}&search=${search}`);
+      // Returns { hostels: [...], pagination: {...} }
+      return data.data;
     },
+    refetchInterval: 30000,
+    staleTime: 20000,
   });
 };
 
@@ -58,6 +61,19 @@ export const useAssignAdmin = () => {
   });
 };
 
+export const useHostelStats = (hostelId: string) => {
+  return useQuery({
+    queryKey: ["hostel-stats", hostelId],
+    queryFn: async () => {
+      const { data } = await api.get(`/hostel/${hostelId}/stats`);
+      return data.data || data;
+    },
+    enabled: !!hostelId,
+    refetchInterval: 30000, // Refetch every 30 seconds
+    staleTime: 20000,
+  });
+};
+
 // ==========================================
 // ROOM APIS (ADMIN view)
 // ==========================================
@@ -80,12 +96,14 @@ export const useRooms = (hostelId?: string) => {
   return useQuery({
     queryKey: ["rooms", hostelId],
     queryFn: async () => {
-      // Backend expects /rooms?hostelId=xxx if filtering
       const url = hostelId ? `/rooms?hostelId=${hostelId}` : "/rooms";
       const { data } = await api.get(url);
-      return data.data || data; // handle payload structure 
+      return data.data || data;
     },
-    enabled: !!hostelId // Only fetch if we have a hostel
+    // Always enabled — backend uses session hostelId as fallback
+    enabled: true,
+    refetchInterval: 30000,
+    staleTime: 20000,
   });
 };
 
@@ -119,8 +137,8 @@ export const useAssignBed = () => {
 export const useVacateBed = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (payload: { userId: string }) => {
-      const { data } = await api.post("/rooms/vacate-bed", payload);
+    mutationFn: async (bedId: string) => {
+      const { data } = await api.post("/rooms/vacate-bed", { bedId });
       return data;
     },
     onSuccess: () => {
@@ -199,11 +217,34 @@ export const useComplaints = (page = 1, limit = 10) => {
   });
 };
 
+export const useAdminComplaints = (page = 1, limit = 10) => {
+  return useQuery({
+    queryKey: ["admin-complaints", page, limit],
+    queryFn: async () => {
+      const { data } = await api.get(`/complaint/admin?page=${page}&limit=${limit}`);
+      return data.data || data;
+    },
+  });
+};
+
 export const useUpdateComplaintStatus = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (payload: { complaintID: string, status: string }) => {
       const { data } = await api.patch("/complaint/status", payload);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["complaints"] });
+    },
+  });
+};
+
+export const useAddComplaintComment = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: { complaintID: string, content: string }) => {
+      const { data } = await api.post(`/complaint/${payload.complaintID}/comments`, { content: payload.content });
       return data;
     },
     onSuccess: () => {

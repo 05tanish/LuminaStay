@@ -9,6 +9,8 @@ import {
 
 import { protect } from "../../middleware/Authentification.Middleware.js";
 import { authorize } from "../../middleware/authorization.Middleware.js";
+import { validate } from "../../middleware/Validate.Middleware.js";
+import { upsertMenuSchema, weeklyMenuSchema } from "./Food.Schema.js";
 
 const router = Router();
 
@@ -55,7 +57,7 @@ const router = Router();
  *       200:
  *         description: Menu updated
  */
-router.post("/menu", protect, authorize("ADMIN"), upsertMenu);
+router.post("/menu", protect, authorize("ADMIN"), validate(upsertMenuSchema), upsertMenu);
 /**
  * @swagger
  * /api/food/menu:
@@ -104,7 +106,7 @@ router.get("/menu", protect, getMenu);
  *       201:
  *         description: Weekly menu created
  */
-router.post("/menu/weekly", protect, authorize("ADMIN"), createWeeklyMenu);
+router.post("/menu/weekly", protect, authorize("ADMIN"), validate(weeklyMenuSchema), createWeeklyMenu);
 /**
  * @swagger
  * /api/food/menu/weekly:

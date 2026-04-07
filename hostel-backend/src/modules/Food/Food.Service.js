@@ -1,8 +1,8 @@
 import { prisma } from "../../config/db.js";
 import AppError from "../../utils/AppError.js";
+import {logger} from "../../utils/logger.js";
 
 export const upsertMenuService = async (date, meals, tx = null) => {
-
   const db = tx || prisma;
 
   const allowedTypes = ["BREAKFAST", "LUNCH", "DINNER"];
@@ -50,7 +50,7 @@ export const upsertMenuService = async (date, meals, tx = null) => {
       where: { mealId: upsertedMeal.id }
     });
 
-    //  Validate that items array exists and is not empty
+  
     if (!meal.items || !Array.isArray(meal.items) || meal.items.length === 0) {
       throw new AppError(`Meal ${meal.type} must have at least one item`, 400);
     }
@@ -62,35 +62,31 @@ export const upsertMenuService = async (date, meals, tx = null) => {
       }))
     });
   }
-
+logger.info("Menu upserted", {
+  date,
+  mealsCount: meals.length
+});
   return food;
 };
 
-// Get menu by date
+// Get menu by date — returns null if no menu set for that date
 export const getMenuByDateService = async (date) => {
-
   const food = await prisma.food.findUnique({
     where: { date: new Date(date) },
     include: {
       meals: {
-        include: {
-          items: true
-        }
+        include: { items: true }
       }
     }
   });
 
-  if (!food) {
-    throw new AppError("Menu not found", 404);
-  }
-
-  return food;
+  // Return null instead of throwing — frontend handles "no menu" gracefully
+  return food || null;
 };
 
 
 
 export const createWeeklyMenuService = async (startDate, menus) => {
-
   return await prisma.$transaction(async (tx) => {
 
     for (const menu of menus) {
@@ -136,7 +132,7 @@ export const getWeeklyMenuService = async (startDate) => {
   });
 
   if (!menus.length) {
-    throw new AppError("No menu found for this week", 404);
+    return [];
   }
 
   return menus;

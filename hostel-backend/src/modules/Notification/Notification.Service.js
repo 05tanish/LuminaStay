@@ -1,32 +1,54 @@
 import { prisma } from "../../config/db.js";
 import AppError from "../../utils/AppError.js";
+import { logger } from "../../utils/logger.js";
 
-// Broadcast to all users
-export const broadcast = async (title, message) => {
+// Broadcast to all users in a specific hostel (or all hostels if no hostelId provided)
+export const broadcast = async (title, message, hostelId = null) => {
+  try {
 
-  //  Use a transaction to ensure notification and recipients are created atomically
-  return await prisma.$transaction(async (tx) => {
-    const notification = await tx.notification.create({
-      data: { title, message }
-    });
+    const result = await prisma.$transaction(async (tx) => {
 
-    const users = await tx.user.findMany({
-      select: { id: true }
-    });
-
-    if (users.length > 0) {
-      await tx.notificationRecipient.createMany({
-        data: users.map((user) => ({
-          notificationId: notification.id,
-          userId: user.id
-        }))
+      const notification = await tx.notification.create({
+        data: { title, message, hostelId }
       });
-    }
 
-    return notification;
-  });
+      const userWhereClause = hostelId ? { hostelId } : {};
+
+      const users = await tx.user.findMany({
+        where: userWhereClause,
+        select: { id: true }
+      });
+
+      if (users.length > 0) {
+        await tx.notificationRecipient.createMany({
+          data: users.map((user) => ({
+            notificationId: notification.id,
+            userId: user.id
+          }))
+        });
+      }
+      return {
+        notification,
+        recipientCount: users.length
+      };
+    });
+    logger.info("Notification broadcast sent", {
+      notificationId: result.notification.id,
+      hostelId,
+      recipientCount: result.recipientCount
+    });
+
+    return result.notification;
+
+  } catch (error) {
+    logger.error("Notification broadcast failed", {
+      hostelId,
+      error: error.message
+    });
+
+    throw new AppError("Failed to send broadcast", 500);
+  }
 };
-
 
 // Send to single user
 export const sendToUser = async (title, message, userId) => {
@@ -51,26 +73,54 @@ export const sendToUser = async (title, message, userId) => {
       }
     });
 
+    logger.info("Notification sent to user", { notificationId: notification.id, userId });
     return notification;
   });
 };
 
 
-//  Get all notifications for user — added pagination
+//  Get all notifications for user (filtered by hostel if user has one)
 export const getUserNotificationsService = async (userId, page = 1, limit = 20) => {
   const skip = (page - 1) * limit;
 
+  // Get user's hostelId to filter notifications
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { hostelId: true }
+  });
+
+  // Build where clause: get notifications for this user that are either:
+  // 1. Global (hostelId is null) OR
+  // 2. For their specific hostel (if they have one)
+  const notificationWhere = user?.hostelId 
+    ? { OR: [{ hostelId: null }, { hostelId: user.hostelId }] }
+    : { hostelId: null };
+
   const [notifications, total] = await Promise.all([
     prisma.notificationRecipient.findMany({
-      where: { userId },
-      include: { notification: true },
+      where: { 
+        userId,
+        notification: notificationWhere
+      },
+      include: { 
+        notification: {
+          include: {
+            hostel: { select: { name: true } }
+          }
+        }
+      },
       orderBy: {
         notification: { createdAt: "desc" }
       },
       skip,
       take: limit
     }),
-    prisma.notificationRecipient.count({ where: { userId } })
+    prisma.notificationRecipient.count({ 
+      where: { 
+        userId,
+        notification: notificationWhere
+      }
+    })
   ]);
 
   return {
@@ -85,7 +135,7 @@ export const getUserNotificationsService = async (userId, page = 1, limit = 20) 
 };
 
 
-//  Mark as read — added userId check for ownership verification
+//  Mark as read 
 export const markAsRead = async (id, userId) => {
   const recipient = await prisma.notificationRecipient.findUnique({
     where: { id }
@@ -107,15 +157,37 @@ export const markAsRead = async (id, userId) => {
 };
 
 
-//  Get unread notifications — added pagination
+//  Get unread notifications (filtered by hostel if user has one)
 export const getUnreadNotificationsService = async (userId, page = 1, limit = 20) => {
   const skip = (page - 1) * limit;
-  const where = { userId, read: false };
+
+  // Get user's hostelId to filter notifications
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { hostelId: true }
+  });
+
+  // Build where clause for hostel filtering
+  const notificationWhere = user?.hostelId 
+    ? { OR: [{ hostelId: null }, { hostelId: user.hostelId }] }
+    : { hostelId: null };
+
+  const where = { 
+    userId, 
+    read: false,
+    notification: notificationWhere
+  };
 
   const [notifications, total] = await Promise.all([
     prisma.notificationRecipient.findMany({
       where,
-      include: { notification: true },
+      include: { 
+        notification: {
+          include: {
+            hostel: { select: { name: true } }
+          }
+        }
+      },
       orderBy: {
         notification: { createdAt: "desc" }
       },

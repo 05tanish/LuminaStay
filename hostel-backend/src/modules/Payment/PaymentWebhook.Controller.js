@@ -1,5 +1,6 @@
 import { asyncHandler } from "../../utils/AsyncHandler.js";
 import { verifyWebhookService } from "./PaymentWebhook.Service.js";
+import { logger } from "../../utils/logger.js";
 
 export const razorpayWebhook = asyncHandler(async (req, res) => {
   const signature = req.headers["x-razorpay-signature"];
@@ -15,7 +16,7 @@ export const razorpayWebhook = asyncHandler(async (req, res) => {
     res.status(200).json({ status: "ok" });
 
   } catch (error) {
-    console.error("Webhook error:", error.message);
+    logger.error("Webhook processing error", { error: error.message });
 
     //   Still return 200 to avoid repeated retry storms from Razorpay
     res.status(200).json({ status: "error handled" });

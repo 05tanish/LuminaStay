@@ -7,7 +7,9 @@ import {
   getAllHostelsService,
   getHostelByIdService,
   updateHostelService,
-  deleteHostelService
+  deleteHostelService,
+  transferHostelService,
+  getHostelStatsService
 } from "./Hostel.Service.js";
 
 
@@ -19,7 +21,7 @@ export const createHostel = asyncHandler(async (req, res) => {
     throw new AppError("Name and address are required", 400);
   }
 
-  const hostel = await createHostelService(name, address);
+  const hostel = await createHostelService(name, address, req.user);
 
   return successResponse(res, {
     statusCode: 201,
@@ -29,18 +31,18 @@ export const createHostel = asyncHandler(async (req, res) => {
 });
 
 
-// Get all hostels — [REVIEW] Added pagination
+// Get all hostels — scoped to super admin's own hostels
 export const getHostels = asyncHandler(async (req, res) => {
   const page = parseInt(req.query.page) || 1;
-  const limit = parseInt(req.query.limit) || 20;
+  const limit = parseInt(req.query.limit) || 10;
+  const search = req.query.search || "";
 
-  const result = await getAllHostelsService(page, limit);
+  const result = await getAllHostelsService(page, limit, search, req.user.id, req.user.role);
 
   return successResponse(res, {
     statusCode: 200,
     message: "Hostels fetched successfully",
-    data: result.hostels,
-    pagination: result.pagination
+    data: result
   });
 });
 
@@ -49,7 +51,7 @@ export const getHostels = asyncHandler(async (req, res) => {
 export const getHostelById = asyncHandler(async (req, res) => {
   const { id } = req.params;
 
-  const hostel = await getHostelByIdService(id);
+  const hostel = await getHostelByIdService(id, req.user.id, req.user.role);
 
   return successResponse(res, {
     statusCode: 200,
@@ -63,7 +65,7 @@ export const getHostelById = asyncHandler(async (req, res) => {
 export const updateHostel = asyncHandler(async (req, res) => {
   const { id } = req.params;
 
-  const updated = await updateHostelService(id, req.body);
+  const updated = await updateHostelService(id, req.body, req.user);
 
   return successResponse(res, {
     statusCode: 200,
@@ -76,12 +78,46 @@ export const updateHostel = asyncHandler(async (req, res) => {
 // Delete hostel
 export const deleteHostel = asyncHandler(async (req, res) => {
   const { id } = req.params;
+  const { mode } = req.query;
 
-  const deleted = await deleteHostelService(id);
+  const deleted = await deleteHostelService(id, mode, req.user);
 
   return successResponse(res, {
     statusCode: 200,
-    message: "Hostel deleted successfully",
+    message: `Hostel ${mode === 'hard' ? 'hard deleted' : 'soft deleted'} successfully`,
     data: deleted
+  });
+});
+
+export const transferHostel = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { targetHostelId } = req.body;
+
+  if (!targetHostelId) {
+    throw new AppError("targetHostelId is required for transfer", 400);
+  }
+
+  const result = await transferHostelService(id, targetHostelId, req.user);
+
+  return successResponse(res, {
+    statusCode: 200,
+    message: "Hostel data transferred successfully",
+    data: result
+  });
+});
+
+export const getHostelStats = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  if (!id) {
+    throw new AppError("Hostel ID is required", 400);
+  }
+
+  const stats = await getHostelStatsService(id, req.user.id, req.user.role);
+
+  return successResponse(res, {
+    statusCode: 200,
+    message: "Hostel stats fetched successfully",
+    data: stats
   });
 });

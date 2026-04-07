@@ -4,9 +4,10 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { useRooms, useCreateRoom, useAssignBed, useVacateBed } from "@/hooks/use-api";
+import { useRooms, useCreateRoom, useAssignBed, useVacateBed, useUsers } from "@/hooks/use-api";
 import { useAuthStore } from "@/store/auth-store";
-import { Loader2, Plus, Bed, Users } from "lucide-react";
+import { Loader2, Plus, Bed, Users, UserPlus, UserMinus } from "lucide-react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,11 +28,19 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
+// hostelId is always injected from the authenticated user's session in the backend.
+// Frontend schema makes it optional so form validation never blocks on it.
 const createRoomSchema = z.object({
   roomNo: z.string().min(1, "Room number is required"),
-  capacity: z.coerce.number().min(1, "Capacity must be at least 1"),
-  hostelId: z.string().min(1, "Hostel ID is required"),
+  capacity: z.coerce.number().min(1, "Capacity must be at least 1").max(20),
 });
 
 type CreateRoomValues = z.infer<typeof createRoomSchema>;
@@ -39,17 +48,25 @@ type CreateRoomValues = z.infer<typeof createRoomSchema>;
 export default function AdminRoomsPage() {
   const user = useAuthStore((s) => s.user);
   const [open, setOpen] = useState(false);
+  const [assignOpen, setAssignOpen] = useState(false);
+  const [selectedBed, setSelectedBed] = useState<any>(null);
+  const [selectedUserId, setSelectedUserId] = useState("");
   const { data: rooms, isLoading } = useRooms(user?.hostelId);
   const { mutate: createRoom, isPending: creating } = useCreateRoom();
+  const { mutate: assignBed, isPending: assigning } = useAssignBed();
+  const { mutate: vacateBed, isPending: vacating } = useVacateBed();
+  const { data: usersData } = useUsers();
+  const allUsers: any[] = usersData?.users ?? usersData?.data ?? [];
 
   const form = useForm<CreateRoomValues>({
     resolver: zodResolver(createRoomSchema) as any,
-    defaultValues: { roomNo: "", capacity: 2, hostelId: user?.hostelId ?? "" },
+    defaultValues: { roomNo: "", capacity: 2 },
   });
 
   function onSubmit(values: CreateRoomValues) {
-    createRoom(values, {
-      onSuccess: () => { setOpen(false); form.reset({ ...form.getValues(), roomNo: "" }); },
+    // hostelId is injected server-side from session — just send roomNo + capacity
+    createRoom({ roomNo: values.roomNo, capacity: values.capacity }, {
+      onSuccess: () => { setOpen(false); form.reset({ roomNo: "", capacity: 2 }); },
     });
   }
 
@@ -101,7 +118,11 @@ export default function AdminRoomsPage() {
                     </FormItem>
                   )}
                 />
-                <Button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700" disabled={creating}>
+                <Button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700" disabled={creating} onClick={() => {
+                  Object.keys(form.formState.errors).forEach(key => {
+                    toast.error(`Error in ${key}: ${form.formState.errors[key as keyof CreateRoomValues]?.message}`);
+                  });
+                }}>
                   {creating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Create Room
                 </Button>
@@ -150,12 +171,22 @@ export default function AdminRoomsPage() {
                   {room.beds?.map((bed: any) => (
                     <div
                       key={bed.id}
-                      title={bed.user ? `Bed ${bed.bedNo}: ${bed.user.name}` : `Bed ${bed.bedNo}: Empty`}
-                      className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold transition-colors ${
-                        bed.userId
-                          ? "bg-indigo-500 text-white"
-                          : "bg-muted text-muted-foreground border"
-                      }`}
+                      title={bed.user ? `Bed ${bed.bedNo}: ${bed.user.name} (click to vacate)` : `Bed ${bed.bedNo}: Empty (click to assign)`}
+                      onClick={() => {
+                        if (bed.userId) {
+                          if (confirm(`Vacate bed ${bed.bedNo} (${bed.user?.name})?`)) {
+                            vacateBed(bed.id);
+                          }
+                        } else {
+                          setSelectedBed(bed);
+                          setSelectedUserId("");
+                          setAssignOpen(true);
+                        }
+                      }}
+                      className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold transition-colors cursor-pointer hover:ring-2 hover:ring-indigo-400 ${bed.userId
+                          ? "bg-indigo-500 text-white hover:bg-rose-500"
+                          : "bg-muted text-muted-foreground border hover:bg-indigo-100 dark:hover:bg-indigo-900/40"
+                        }`}
                     >
                       {bed.bedNo}
                     </div>
@@ -170,9 +201,8 @@ export default function AdminRoomsPage() {
                   </div>
                   <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                     <div
-                      className={`h-full rounded-full transition-all ${
-                        occupancyPct === 100 ? "bg-rose-500" : "bg-indigo-500"
-                      }`}
+                      className={`h-full rounded-full transition-all ${occupancyPct === 100 ? "bg-rose-500" : "bg-indigo-500"
+                        }`}
                       style={{ width: `${occupancyPct}%` }}
                     />
                   </div>
@@ -197,6 +227,57 @@ export default function AdminRoomsPage() {
           )}
         </div>
       )}
+
+      {/* Assign Bed Dialog */}
+      <Dialog open={assignOpen} onOpenChange={setAssignOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UserPlus className="h-5 w-5 text-indigo-500" />
+              Assign Bed {selectedBed?.bedNo}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div>
+              <label className="text-sm font-medium mb-2 block">Select Resident</label>
+              <Select value={selectedUserId} onValueChange={(val) => setSelectedUserId(val ?? "")}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose a resident..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {allUsers
+                    .filter((u) => !u.bed)
+                    .map((u) => (
+                      <SelectItem key={u.id} value={u.id}>
+                        {u.name} ({u.email})
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <Button
+              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white"
+              disabled={!selectedUserId || assigning}
+              onClick={() => {
+                if (!selectedUserId || !selectedBed) return;
+                assignBed(
+                  { userId: selectedUserId, bedId: selectedBed.id },
+                  {
+                    onSuccess: () => {
+                      setAssignOpen(false);
+                      setSelectedBed(null);
+                      setSelectedUserId("");
+                    },
+                  }
+                );
+              }}
+            >
+              {assigning && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Assign Bed
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

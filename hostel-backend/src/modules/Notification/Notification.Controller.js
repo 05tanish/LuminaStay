@@ -19,11 +19,22 @@ export const broadcastNotification = asyncHandler(async (req, res) => {
     throw new AppError("Title and message are required", 400);
   }
 
-  const notification = await broadcast(title, message);
+  let targetHostelId = null;
+
+  if (req.user.role === 'ADMIN') {
+    if (!req.user.hostelId) {
+      throw new AppError("Admin is not assigned to a hostel", 400);
+    }
+    targetHostelId = req.user.hostelId;
+  } else if (req.user.role === 'SUPER_ADMIN') {
+    targetHostelId = req.body.hostelId || null;
+  }
+
+  const notification = await broadcast(title, message, targetHostelId);
 
   return successResponse(res, {
     statusCode: 200,
-    message: "Notification sent to all users",
+    message: targetHostelId ? "Notification sent to hostel users" : "Notification sent to all users",
     data: notification
   });
 });
@@ -46,8 +57,7 @@ export const sendUserNotification = asyncHandler(async (req, res) => {
   });
 });
 
-
-// Get user notifications — Added pagination support
+// Get user notifications 
 export const getUserNotifications = asyncHandler(async (req, res) => {
   const userId = req.user.id;
   const page = parseInt(req.query.page) || 1;
@@ -79,7 +89,7 @@ export const markNotificationRead = asyncHandler(async (req, res) => {
 });
 
 
-// Get unread notifications — [REVIEW] Added pagination support
+// Get unread notifications 
 export const getUnreadNotifications = asyncHandler(async (req, res) => {
   const userId = req.user.id;
   const page = parseInt(req.query.page) || 1;

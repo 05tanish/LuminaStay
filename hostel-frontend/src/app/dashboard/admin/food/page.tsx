@@ -89,7 +89,9 @@ const menuSchema = z.object({
 type MenuFormValues = z.infer<typeof menuSchema>;
 
 export default function AdminFoodPage() {
-  const { data: weekData, isLoading } = useFoodWeekly();
+  const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
+  const startDateStr = format(weekStart, "yyyy-MM-dd");
+  const { data: weekData, isLoading } = useFoodWeekly(startDateStr);
   const { mutate: upsertFood, isPending } = useUpsertFood();
   const [editOpen, setEditOpen] = useState(false);
 
@@ -104,12 +106,17 @@ export default function AdminFoodPage() {
   });
 
   function onSubmit(values: MenuFormValues) {
-    // Transform comma-separated strings into item arrays
-    const meals = {
-      BREAKFAST: values.breakfast?.split(",").map((s) => s.trim()).filter(Boolean),
-      LUNCH: values.lunch?.split(",").map((s) => s.trim()).filter(Boolean),
-      DINNER: values.dinner?.split(",").map((s) => s.trim()).filter(Boolean),
-    };
+    // Transform comma-separated strings into the array format the backend expects
+    const meals: { type: string; items: string[] }[] = [];
+    
+    const breakfastItems = values.breakfast?.split(",").map((s) => s.trim()).filter(Boolean) || [];
+    const lunchItems = values.lunch?.split(",").map((s) => s.trim()).filter(Boolean) || [];
+    const dinnerItems = values.dinner?.split(",").map((s) => s.trim()).filter(Boolean) || [];
+    
+    if (breakfastItems.length > 0) meals.push({ type: "BREAKFAST", items: breakfastItems });
+    if (lunchItems.length > 0) meals.push({ type: "LUNCH", items: lunchItems });
+    if (dinnerItems.length > 0) meals.push({ type: "DINNER", items: dinnerItems });
+
     upsertFood(
       { date: values.date, meals },
       { onSuccess: () => setEditOpen(false) }

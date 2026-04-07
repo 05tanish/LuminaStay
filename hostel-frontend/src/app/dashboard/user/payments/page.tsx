@@ -12,8 +12,8 @@ export default function UserPaymentsPage() {
   const [page, setPage] = useState(1);
   const { data, isLoading } = useMyFees(page);
 
-  const fees: any[] = data?.data ?? [];
-  const total: number = data?.total ?? 0;
+  const fees: any[] = data?.fees ?? data?.data ?? [];
+  const total: number = data?.pagination?.total ?? data?.total ?? 0;
   const totalPages = Math.ceil(total / 20);
 
   const totalDue = fees

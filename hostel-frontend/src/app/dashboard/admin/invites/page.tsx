@@ -5,9 +5,9 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { format, addDays } from "date-fns";
-import { useInvites, useCreateInvite } from "@/hooks/use-api";
+import { useInvites, useCreateInvite, useSendEmailShare } from "@/hooks/use-api";
 import { useAuthStore } from "@/store/auth-store";
-import { Loader2, Plus, Copy, Check, Link as LinkIcon } from "lucide-react";
+import { Loader2, Plus, Copy, Check, Link as LinkIcon, MessageCircle, Mail } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -59,6 +59,34 @@ function CopyButton({ text }: { text: string }) {
   return (
     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleCopy}>
       {copied ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
+    </Button>
+  );
+}
+
+function EmailShareButton({ invite, inviteLink }: { invite: any; inviteLink: string }) {
+  const { mutate, isPending } = useSendEmailShare();
+  if (invite.type !== "EMAIL") return null;
+  return (
+    <Button
+      variant="ghost"
+      size="icon"
+      className="h-8 w-8"
+      disabled={isPending || invite.used || new Date(invite.expiresAt) < new Date()}
+      onClick={() => mutate({ code: invite.code, email: invite.email, originUrl: window.location.origin })}
+    >
+      {isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Mail className="h-3.5 w-3.5 text-indigo-500" />}
+    </Button>
+  );
+}
+
+function WhatsAppShareButton({ inviteLink }: { inviteLink: string }) {
+  const handleShare = () => {
+    const text = encodeURIComponent(`Join Hostel using this link: ${inviteLink}`);
+    window.open(`https://wa.me/?text=${text}`, "_blank");
+  };
+  return (
+    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleShare}>
+      <MessageCircle className="h-3.5 w-3.5 text-green-500" />
     </Button>
   );
 }
@@ -197,7 +225,11 @@ export default function AdminInvitesPage() {
                   </div>
                   <div className="flex items-center gap-2 bg-muted rounded-lg px-3 py-2">
                     <p className="text-xs font-mono text-muted-foreground flex-1 truncate">{inviteLink}</p>
-                    <CopyButton text={inviteLink} />
+                    <div className="flex items-center">
+                      <WhatsAppShareButton inviteLink={inviteLink} />
+                      <EmailShareButton invite={invite} inviteLink={inviteLink} />
+                      <CopyButton text={inviteLink} />
+                    </div>
                   </div>
                   <p className="text-xs text-muted-foreground">
                     {invite.type === "EMAIL" ? `📧 For: ${invite.email}` : "🌐 Open invite"} ·

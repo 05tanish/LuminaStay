@@ -11,6 +11,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuGroup,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -24,7 +25,11 @@ import {
   CalendarDays, 
   MessageSquareWarning, 
   CreditCard, 
-  Bell 
+  Bell,
+  ShieldCheck,
+  MailPlus,
+  ClipboardCheck,
+  Heart
 } from "lucide-react";
 import { api } from "@/lib/axios";
 import { Button } from "@/components/ui/button";
@@ -34,6 +39,11 @@ const navItems = {
   SUPER_ADMIN: [
     { label: "Overview", href: "/dashboard/superadmin", icon: Home },
     { label: "Hostels", href: "/dashboard/superadmin/hostels", icon: Hotel },
+    { label: "Admins", href: "/dashboard/superadmin/admins", icon: ShieldCheck },
+    { label: "Users", href: "/dashboard/superadmin/users", icon: Users },
+    { label: "Complaints", href: "/dashboard/superadmin/complaints", icon: MessageSquareWarning },
+    { label: "Invites", href: "/dashboard/superadmin/invites", icon: MailPlus },
+    { label: "Notifications", href: "/dashboard/superadmin/notifications", icon: Bell },
   ],
   ADMIN: [
     { label: "Overview", href: "/dashboard/admin", icon: Home },
@@ -42,6 +52,9 @@ const navItems = {
     { label: "Food Menu", href: "/dashboard/admin/food", icon: CalendarDays },
     { label: "Complaints", href: "/dashboard/admin/complaints", icon: MessageSquareWarning },
     { label: "Payments", href: "/dashboard/admin/payments", icon: CreditCard },
+    { label: "Approvals", href: "/dashboard/admin/approvals", icon: ClipboardCheck },
+    { label: "Invites", href: "/dashboard/admin/invites", icon: MailPlus },
+    { label: "Notifications", href: "/dashboard/admin/notifications", icon: Bell },
   ],
   USER: [
     { label: "Overview", href: "/dashboard/user", icon: Home },
@@ -49,6 +62,7 @@ const navItems = {
     { label: "Food Menu", href: "/dashboard/user/food", icon: CalendarDays },
     { label: "My Complaints", href: "/dashboard/user/complaints", icon: MessageSquareWarning },
     { label: "My Dues", href: "/dashboard/user/payments", icon: CreditCard },
+    { label: "Family Details", href: "/dashboard/profile/family", icon: Heart },
   ],
 };
 
@@ -57,20 +71,25 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { user, isAuthenticated, logout } = useAuthStore();
+  const { user, isAuthenticated, logout, _hasHydrated } = useAuthStore();
   const router = useRouter();
   const pathname = usePathname();
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
-    if (!isAuthenticated) {
+  }, []);
+
+  useEffect(() => {
+    // Only redirect AFTER zustand has finished hydrating from localStorage
+    if (_hasHydrated && !isAuthenticated) {
       router.push("/auth/login");
     }
-  }, [isAuthenticated, router]);
+  }, [_hasHydrated, isAuthenticated, router]);
 
-  if (!isMounted || !isAuthenticated || !user) {
-    return null; // Return nothing or skeleton during initial auth check
+  // Show nothing until both client-mount AND zustand hydration are complete
+  if (!isMounted || !_hasHydrated || !isAuthenticated || !user) {
+    return null;
   }
 
   const links = navItems[user.role] || [];
@@ -88,7 +107,7 @@ export default function DashboardLayout({
       {/* Sidebar for Desktop */}
       <aside className="fixed inset-y-0 left-0 z-10 hidden w-64 flex-col border-r bg-background md:flex">
         <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
-          <Link href="/" className="flex items-center gap-2 font-semibold text-primary">
+          <Link href={`/dashboard/${user?.role === "SUPER_ADMIN" ? "superadmin" : user?.role === "ADMIN" ? "admin" : "user"}`} className="flex items-center gap-2 font-semibold text-primary">
             <span className="text-xl tracking-tight">HostelFlow<span className="text-indigo-500">.</span></span>
           </Link>
         </div>
@@ -153,10 +172,14 @@ export default function DashboardLayout({
                     <span className="sr-only">Toggle user menu</span>
                   </Button>
                 </DropdownMenuTrigger>
-               <DropdownMenuContent align="end">
-                 <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                <DropdownMenuContent align="end">
+                 <DropdownMenuGroup>
+                   <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                 </DropdownMenuGroup>
                  <DropdownMenuSeparator />
-                 <DropdownMenuItem>Settings</DropdownMenuItem>
+                 <DropdownMenuItem>
+                   <Link href="/dashboard/profile" className="w-full">Settings & Profile</Link>
+                 </DropdownMenuItem>
                  <DropdownMenuSeparator />
                  <DropdownMenuItem onClick={handleLogout} className="text-red-500 hover:text-red-600 focus:text-red-600">
                    Logout

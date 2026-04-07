@@ -5,8 +5,10 @@ import { successResponse } from "../../utils/ApiResponse.js";
 import {
   toaddnewuser,
   deleteUserService,
-  updateroleservice,
+  updateRoleService,
   getUsersService,
+  getSingleUserService,
+  hardDeleteUserService,
   createMonthlyFeeService,
   getMonthlyFeesService,
   getProfileRequestsService,
@@ -14,7 +16,7 @@ import {
 } from "./Admin.Services.js";
 
 
-// get users
+// get users — scoped by role (admin sees only own hostel residents, superadmin sees only their own hostels)
 export const getUsers = asyncHandler(async (req, res) => {
   let page = Number(req.query.page);
   let limit = Number(req.query.limit);
@@ -25,7 +27,7 @@ export const getUsers = asyncHandler(async (req, res) => {
   limit = Math.min(limit, 100);
   const search = req.query.search || "";
 
-  const result = await getUsersService(page, limit, search);
+  const result = await getUsersService(page, limit, search, req.user.role, req.user.hostelId, req.user.id);
 
   return successResponse(res, {
     statusCode: 200,
@@ -124,7 +126,7 @@ export const updateRole = asyncHandler(async (req, res) => {
     throw new AppError("You cannot change your own role", 400);
   }
 
-  const userupdated = await updateroleservice(userId, role, req.user);
+  const userupdated = await updateRoleService(userId, role, req.user);
 
   return successResponse(res, {
     statusCode: 200,
@@ -162,4 +164,18 @@ export const updateProfileRequestStatus = asyncHandler(async (req, res) => {
     message: `Request ${status.toLowerCase()}`,
     data: result
   });
+});
+
+// Get single user with full details
+export const getSingleUser = asyncHandler(async (req, res) => {
+  const { userId } = req.params;
+  const user = await getSingleUserService(userId, req.user);
+  return successResponse(res, { statusCode: 200, message: "User fetched", data: user });
+});
+
+// Hard delete user (removes account completely)
+export const hardDeleteUser = asyncHandler(async (req, res) => {
+  const { userId } = req.params;
+  const result = await hardDeleteUserService(req.user, userId);
+  return successResponse(res, { statusCode: 200, message: "User permanently deleted", data: result });
 });

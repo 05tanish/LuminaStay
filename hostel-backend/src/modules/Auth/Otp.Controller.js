@@ -4,17 +4,15 @@ import { successResponse } from "../../utils/ApiResponse.js";
 import { sendOtpService } from "../Auth/Sendotp.Service.js";
 import { verifyOtpService } from "../Auth/Otpverification.Service.js";
 import { redis } from "../../config/redis.js";
+import { logger } from "../../utils/logger.js";
 
 export const sendOtp = asyncHandler(async (req, res) => {
   const { email } = req.body;
 
-  if (!email) {
-    throw new AppError("Email required", 400);
-  }
   if (!email || !email.includes("@")) {
     throw new AppError("Invalid email", 400);
   }
-  console.log("OTP route hit");
+  logger.info("OTP send requested", { email });
   await sendOtpService(email);
 
   return successResponse(res, {

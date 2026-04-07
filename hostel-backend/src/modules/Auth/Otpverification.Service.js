@@ -1,11 +1,6 @@
-//  Three critical bugs fixed:
-// 1. `import redis from` (default import) but redis.js exports named `{ redis }`
-// 2. Attempt tracking happened AFTER the first OTP comparison — should be BEFORE
-//    so rate limiting works even when the OTP is wrong
-// 3. catch block swallowed original AppError (converting 400→503), masking real errors
+
 import { prisma } from "../../config/db.js";
 import crypto from "crypto";
-//  Changed from default import to named import
 import { redis } from "../../config/redis.js";
 import AppError from "../../utils/AppError.js";
 
@@ -18,8 +13,6 @@ export const verifyOtpService = async (email, code) => {
   const otpKey = `otp:${email}`;
   const attemptKey = `otp:attempt:${email}`;
 
-  //  Track attempts FIRST, before comparing OTP.
-  // This prevents brute-force attacks even when guessing wrong OTPs.
   const attempts = await redis.incr(attemptKey);
 
   if (attempts === 1) {
@@ -48,9 +41,6 @@ export const verifyOtpService = async (email, code) => {
   //  Success → cleanup OTP and attempt counter
   await redis.del(otpKey);
   await redis.del(attemptKey);
-
-  // We DO NOT update `prisma.user` here because the user might not exist yet during registration.
-  // The caller is responsible for creating/updating the user with `phoneVerified: true`.
 
   return true;
 };

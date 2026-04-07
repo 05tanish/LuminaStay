@@ -1,6 +1,7 @@
 import { prisma } from "../../config/db.js";
 import AppError from "../../utils/AppError.js";
 import { logger } from "../../utils/logger.js";
+import { auditLog } from "../../utils/audit.js";
 
 // create the complaints
 export const complaintService = async (title, description, userId) => {
@@ -40,8 +41,8 @@ export const complaintService = async (title, description, userId) => {
         return complaint;
     } catch (error) {
         logger.error("Complaint creation failed", {
-            complaintID,
             userId,
+            title,
             error: error.message
         });
 
@@ -49,7 +50,7 @@ export const complaintService = async (title, description, userId) => {
     }
 };
 
-// delete the comoplaints 
+// delete the complaints 
 export const deletecomplaintservice = async (complaintID, userid, user) => {
 
     const complaint = await prisma.complaint.findUnique({
@@ -60,11 +61,18 @@ export const deletecomplaintservice = async (complaintID, userid, user) => {
         throw new AppError("Complaint not found", 404);
     }
 
-    if (complaint.userId !== userid) {
-        throw new AppError("You can only delete your own complaints", 403);
-    }
     const isOwner = complaint.userId === userid;
     const isAdmin = ["ADMIN", "SUPER_ADMIN"].includes(user.role);
+
+    // SUPER_ADMIN can only delete complaints from their own hostels
+    if (user.role === "SUPER_ADMIN") {
+        const ownership = await prisma.userHostel.findFirst({
+            where: { userId: user.id, hostelId: complaint.hostelId }
+        });
+        if (!ownership) {
+            throw new AppError("Not authorized to delete this complaint", 403);
+        }
+    }
 
     if (!isOwner && !isAdmin) {
         throw new AppError("Not authorized to delete this complaint", 403);
@@ -101,6 +109,7 @@ export const deletecomplaintservice = async (complaintID, userid, user) => {
 };
 
 export const getcomplaintservice = async (userid, page = 1, limit = 20) => {
+
     const user = await prisma.user.findUnique({
         where: {
             id: userid,
@@ -131,7 +140,6 @@ export const getcomplaintservice = async (userid, page = 1, limit = 20) => {
         }),
         prisma.complaint.count({ where: { userId: userid } })
     ]);
-
     return {
         complaints,
         pagination: {
@@ -182,7 +190,7 @@ export const updatecomplaintservice = async (complaintID, title, description, us
             complaintID,
             userid,
             oldTitle: complaint.title,
-            newTitle: updatedComplaint.title
+            newTitle: updatecomplaint.title
         });
         return updatecomplaint;
     } catch (error) {
@@ -197,9 +205,9 @@ export const updatecomplaintservice = async (complaintID, title, description, us
     }
 };
 
-// Added validation for allowed status values
-const ALLOWED_STATUSES = ["OPEN", "IN_PROGRESS", "RESOLVED"];
 // update complaint stats
+const ALLOWED_STATUSES = ["OPEN", "IN_PROGRESS", "RESOLVED"];
+
 export const updateComplaintStatusService = async (
     complaintId,
     status,
@@ -222,6 +230,17 @@ export const updateComplaintStatusService = async (
     if (!["ADMIN", "SUPER_ADMIN"].includes(actor.role)) {
         throw new AppError("Not authorized to update complaint status", 403);
     }
+
+    // SUPER_ADMIN can only update complaints from their own hostels
+    if (actor.role === "SUPER_ADMIN") {
+        const ownership = await prisma.userHostel.findFirst({
+            where: { userId: actor.id, hostelId: complaint.hostelId }
+        });
+        if (!ownership) {
+            throw new AppError("Not authorized to update this complaint", 403);
+        }
+    }
+
     if (complaint.status === status) {
         throw new AppError("Complaint already has this status", 400);
     }
@@ -284,15 +303,22 @@ export const getAdminComplaintsService = async (
     actor,
     status
 ) => {
-
     if (!["ADMIN", "SUPER_ADMIN"].includes(actor.role)) {
         throw new AppError("Not authorized", 403);
     }
 
+    // SUPER_ADMIN can only access complaints from their own hostels
+    if (actor.role === "SUPER_ADMIN") {
+        const ownership = await prisma.userHostel.findFirst({
+            where: { userId: actor.id, hostelId }
+        });
+        if (!ownership) {
+            throw new AppError("Hostel not found in your workspace", 404);
+        }
+    }
 
     const safeLimit = Math.min(limit, 50);
     const skip = (page - 1) * safeLimit;
-
 
     const whereClause = {
         hostelId,
@@ -346,11 +372,32 @@ export const getAdminComplaintsService = async (
     };
 };
 
-export const getSuperAdminComplaintsService = async (page = 1, limit = 20, actor) => {
-    const skip = (page - 1) * limit;
+export const getSuperAdminComplaintsService = async (
+    page = 1,
+    limit = 20,
+    actor
+) => {
+
+
+    if (actor.role !== "SUPER_ADMIN") {
+        throw new AppError("Not authorized", 403);
+    }
+
+    // Get hostel IDs this super admin owns
+    const myHostelLinks = await prisma.userHostel.findMany({
+        where: { userId: actor.id },
+        select: { hostelId: true }
+    });
+    const myHostelIds = myHostelLinks.map(h => h.hostelId);
+
+    const safeLimit = Math.min(limit, 50);
+    const skip = (page - 1) * safeLimit;
 
     const [complaints, total] = await Promise.all([
         prisma.complaint.findMany({
+            where: {
+                hostelId: { in: myHostelIds }
+            },
             include: {
                 user: {
                     select: { name: true },
@@ -358,31 +405,64 @@ export const getSuperAdminComplaintsService = async (page = 1, limit = 20, actor
                 hostel: {
                     select: { name: true }
                 },
+
                 comments: {
-                    include: { user: { select: { name: true, role: true } } },
-                    orderBy: { createdAt: 'asc' }
+                    take: 3,
+                    orderBy: { createdAt: "desc" },
+                    include: {
+                        user: { select: { name: true, role: true } }
+                    }
                 }
             },
             orderBy: { createdAt: "desc" },
             skip,
-            take: limit
+            take: safeLimit
         }),
-        prisma.complaint.count()
+
+        prisma.complaint.count({
+            where: {
+                hostelId: { in: myHostelIds }
+            }
+        })
     ]);
+
+
+    logger.info("SuperAdmin fetched complaints", {
+        actorId: actor.id,
+        page,
+        limit: safeLimit
+    });
 
     return {
         complaints,
-        pagination: { page, limit, total, totalPages: Math.ceil(total / limit) }
+        pagination: {
+            page,
+            limit: safeLimit,
+            total,
+            totalPages: Math.ceil(total / safeLimit)
+        }
     };
-}
+};
+// add comment to complaint 
+export const addComplaintCommentService = async (
+    complaintId,
+    userId,
+    content
+) => {
 
-export const addComplaintCommentService = async (complaintId, userId, content) => {
+    if (!content || content.trim().length === 0) {
+        throw new AppError("Comment cannot be empty", 400);
+    }
+
     const complaint = await prisma.complaint.findUnique({
         where: { id: complaintId }
     });
-    if (!complaint) throw new AppError("Complaint not found", 404);
 
-    return await prisma.complaintComment.create({
+    if (!complaint) {
+        throw new AppError("Complaint not found", 404);
+    }
+
+    const comment = await prisma.complaintComment.create({
         data: {
             complaintId,
             userId,
@@ -392,4 +472,63 @@ export const addComplaintCommentService = async (complaintId, userId, content) =
             user: { select: { name: true, role: true } }
         }
     });
-}
+
+
+    logger.info("Comment added to complaint", {
+        complaintId,
+        userId
+    });
+
+    return comment;
+};
+// get complaint comments
+export const getComplaintCommentsService = async (
+    complaintId,
+    page = 1,
+    limit = 10,
+    actor
+) => {
+
+    const complaint = await prisma.complaint.findUnique({
+        where: { id: complaintId }
+    });
+
+    if (!complaint) {
+        throw new AppError("Complaint not found", 404);
+    }
+
+    const safeLimit = Math.min(limit, 50);
+    const skip = (page - 1) * safeLimit;
+
+    const [comments, total] = await Promise.all([
+        prisma.complaintComment.findMany({
+            where: { complaintId },
+            include: {
+                user: { select: { name: true, role: true } }
+            },
+            orderBy: { createdAt: "desc" },
+            skip,
+            take: safeLimit
+        }),
+
+        prisma.complaintComment.count({
+            where: { complaintId }
+        })
+    ]);
+
+    logger.info("Fetched complaint comments", {
+        actorId: actor.id,
+        complaintId,
+        page
+    });
+
+    return {
+        comments,
+        pagination: {
+            page,
+            limit: safeLimit,
+            total,
+            totalPages: Math.ceil(total / safeLimit)
+        }
+    };
+};

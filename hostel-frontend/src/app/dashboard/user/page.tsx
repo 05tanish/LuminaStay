@@ -14,10 +14,10 @@ export default function UserDashboardPage() {
   const { data: complaintsData, isLoading: complaintsLoading } = useComplaints();
   const { data: notifData, isLoading: notifLoading } = useNotifications();
 
-  const fees: any[] = feesData?.data ?? [];
+  const fees: any[] = feesData?.fees ?? feesData?.data ?? [];
   const pendingFee = fees.find((f) => f.status === "PENDING" || f.status === "OVERDUE");
-  const unreadNotifs = (notifData?.data ?? []).filter((n: any) => !n.read).length;
-  const myComplaints: any[] = complaintsData?.data ?? [];
+  const unreadNotifs = (notifData?.notifications ?? notifData?.data ?? []).filter((n: any) => !n.read).length;
+  const myComplaints: any[] = complaintsData?.complaints ?? complaintsData?.data ?? [];
 
   return (
     <div className="space-y-8">

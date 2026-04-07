@@ -1,5 +1,6 @@
 import crypto from "crypto";
 import { prisma } from "../../config/db.js";
+import { logger } from "../../utils/logger.js";
 
 export const verifyWebhookService = async (rawBody, signature) => {
   // 🔐 Step 1: Generate signature from RAW body
@@ -32,11 +33,15 @@ export const verifyWebhookService = async (rawBody, signature) => {
     where: { razorpayOrderId: orderId }
   });
 
-  if (!payment) return;
+  if (!payment) {
+    logger.warn("Webhook received for unknown order", { orderId });
+    return;
+  }
 
   // 🔁 Step 6: Idempotency check
   if (payment.status === "PAID") {
-    return; // already processed
+    logger.debug("Webhook duplicate — payment already processed", { orderId });
+    return;
   }
 
   // 💾 Step 7: Transaction (atomic update)

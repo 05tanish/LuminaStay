@@ -25,7 +25,9 @@ export const protect = asyncHandler(async (req, res, next) => {
       id: true,
       name: true,
       email: true,
-      role: true
+      role: true,
+      hostelId: true,
+      roomId: true
     }
   })
 

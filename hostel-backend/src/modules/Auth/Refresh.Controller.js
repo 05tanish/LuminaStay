@@ -1,16 +1,3 @@
-// Refresh token controller — issues new access token using a valid refresh token.
-//
-// Flow:
-// 1. Client receives 401 on API call (access token expired)
-// 2. Client calls POST /api/auth/refresh
-// 3. Server validates refresh token from cookie against Redis
-// 4. Server issues new access + refresh token pair (rotation)
-// 5. Old refresh token is invalidated in Redis
-//
-// Why token rotation?
-// If a refresh token is stolen, the legitimate user's next refresh will fail
-// (because the stolen token was already rotated), alerting them to a compromise.
-
 import { asyncHandler } from '../../utils/AsyncHandler.js'
 import AppError from '../../utils/AppError.js'
 import { successResponse } from '../../utils/ApiResponse.js'

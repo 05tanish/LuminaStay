@@ -5,9 +5,11 @@ import {
     getUserNotifications,
     markNotificationRead,
     getUnreadNotifications,
-} from "../Notification/Notification.Controller.js"; // Assuming the controller file is named Notification.Controller.js, adjust if necessary
+} from "../Notification/Notification.Controller.js";
 import { protect } from "../../middleware/Authentification.Middleware.js";
 import { authorize } from "../../middleware/authorization.Middleware.js";
+import { validate } from "../../middleware/Validate.Middleware.js";
+import { broadcastSchema, sendUserNotificationSchema } from "./Notification.Schema.js";
 const router = express.Router();
 /**
  * @swagger
@@ -41,7 +43,7 @@ const router = express.Router();
  *       201:
  *         description: Broadcast sent
  */
-router.post("/broadcast", protect, authorize("ADMIN"), broadcastNotification);
+router.post("/broadcast", protect, authorize("SUPER_ADMIN", "ADMIN"), validate(broadcastSchema), broadcastNotification);
 /**
  * @swagger
  * /api/notification/user:
@@ -68,7 +70,7 @@ router.post("/broadcast", protect, authorize("ADMIN"), broadcastNotification);
  *       201:
  *         description: Notification sent
  */
-router.post("/user", protect, authorize("ADMIN"), sendUserNotification);
+router.post("/user", protect, authorize("SUPER_ADMIN", "ADMIN"), validate(sendUserNotificationSchema), sendUserNotification);
 
 // user
 /**

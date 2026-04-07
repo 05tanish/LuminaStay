@@ -1,4 +1,3 @@
-//  Added pagination params to list controllers
 import { asyncHandler } from "../../utils/AsyncHandler.js";
 import { successResponse } from "../../utils/ApiResponse.js";
 import AppError from "../../utils/AppError.js";
@@ -7,6 +6,8 @@ import {
   cashPaymentService,
   getUserPaymentHistoryService,
   getAllPaymentsService,
+  getRevenueByHostelService,
+  getPlatformRevenueService
 } from "./Payment.Service.js";
 
 
@@ -50,7 +51,7 @@ export const cashPayment = asyncHandler(async (req, res) => {
   });
 });
 
-// Added pagination support
+
 export const getUserPayments = asyncHandler(async (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 20;
@@ -64,16 +65,31 @@ export const getUserPayments = asyncHandler(async (req, res) => {
   });
 });
 
-//  Added pagination support
 export const getAllPayments = asyncHandler(async (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 20;
 
-  const result = await getAllPaymentsService(page, limit);
+  const result = await getAllPaymentsService(page, limit, req.user.id, req.user.role);
 
   return successResponse(res, {
     statusCode: 200,
     message: "All payments fetched",
     data: result
+  });
+});
+
+export const getRevenue = asyncHandler(async (req, res) => {
+  let revenue = { totalRevenue: 0 };
+
+  if (req.user.role === "SUPER_ADMIN") {
+    revenue = await getPlatformRevenueService(req.user.id, req.user.role);
+  } else if (req.user.role === "ADMIN" && req.user.hostelId) {
+    revenue = await getRevenueByHostelService(req.user.hostelId, req.user.id, req.user.role);
+  }
+
+  return successResponse(res, {
+    statusCode: 200,
+    message: "Revenue fetched successfully",
+    data: revenue
   });
 });

@@ -2,6 +2,7 @@ import { redis } from "../../config/redis.js";
 import AppError from "../../utils/AppError.js";
 import crypto from "crypto";
 import { Resend } from 'resend';
+import { logger } from "../../utils/logger.js";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -27,7 +28,7 @@ export const sendOtpService = async (email) => {
 
     // ✅ Set cooldown (60 sec)
     await redis.set(cooldownKey, "1", "EX", 60);
-    console.log("otp has been sent", otp);
+    logger.debug("OTP generated and stored", { email });
     // 📩 Send via Resend
     await resend.emails.send({
       from: 'onboarding@resend.dev', // Default test email for Resend
@@ -38,7 +39,7 @@ export const sendOtpService = async (email) => {
 
     return true;
   } catch (error) {
-    console.error("OTP Service Error:", error);
+    logger.error("OTP Service Error", { email, error: error.message });
 
     // ✅ If it's already AppError → rethrow as is
     if (error instanceof AppError) {

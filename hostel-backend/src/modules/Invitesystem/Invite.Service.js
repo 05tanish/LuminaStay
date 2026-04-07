@@ -1,6 +1,7 @@
 import { prisma } from "../../config/db.js";
 import AppError from "../../utils/AppError.js";
-
+import { Resend } from 'resend';
+import { logger } from "../../utils/logger.js";
 // 🔹 Generate random code
 const generateCode = () => {
   return Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -13,14 +14,26 @@ export const createInviteService = async ({
   role,
   hostelId,
   type,
-  expiresInHours = 24
+  expiresInHours = 24,
+  actorId = null,
+  actorRole = null
 }) => {
+
+  // SUPER_ADMIN can only create invites for their own hostels
+  if (actorRole === "SUPER_ADMIN" && actorId) {
+    const ownership = await prisma.userHostel.findFirst({
+      where: { userId: actorId, hostelId }
+    });
+    if (!ownership) {
+      throw new AppError("Hostel not found in your workspace", 404);
+    }
+  }
 
   const code = generateCode();
 
   const expiresAt = new Date();
   expiresAt.setHours(expiresAt.getHours() + expiresInHours);
-const existingInvite = await prisma.invite.findFirst({
+  const existingInvite = await prisma.invite.findFirst({
     where: {
       email,
       hostelId,
@@ -35,7 +48,7 @@ const existingInvite = await prisma.invite.findFirst({
     throw new AppError("An active invite already exists for this email and hostel", 400);
   } else if (type === "EMAIL" && !email) {
     throw new AppError("Email is required for EMAIL type invite", 400);
-  } 
+  }
   const invite = await prisma.invite.create({
     data: {
       email,
@@ -89,14 +102,14 @@ export const useInviteService = async ({
   if (invite.type === "EMAIL" && invite.email !== email) {
     throw new AppError("This invite is not for your email", 403);
   }
-const existingUser = await prisma.user.findUnique({
+  const existingUser = await prisma.user.findUnique({
     where: { email }
   });
 
   if (existingUser) {
     throw new AppError("Email already in use", 400);
   }
-  
+
   return await prisma.$transaction(async (tx) => {
 
     // create user
@@ -127,4 +140,84 @@ const existingUser = await prisma.user.findUnique({
 
     return user;
   });
+};
+
+// ✅ Get Invites by Hostel
+export const getInvitesByHostelService = async (hostelId, actorId = null, actorRole = null) => {
+  // SUPER_ADMIN can only access invites from their own hostels
+  if (actorRole === "SUPER_ADMIN" && actorId) {
+    const ownership = await prisma.userHostel.findFirst({
+      where: { userId: actorId, hostelId }
+    });
+    if (!ownership) {
+      throw new AppError("Hostel not found in your workspace", 404);
+    }
+  }
+
+  const invites = await prisma.invite.findMany({
+    where: { hostelId },
+    orderBy: { createdAt: "desc" }
+  });
+
+  return invites;
+};
+
+// ✅ Get All Invites (Global) - scoped to SUPER_ADMIN's own hostels
+export const getAllInvitesService = async (actorId = null, actorRole = null) => {
+  let where = {};
+
+  // SUPER_ADMIN can only see invites from their own hostels
+  if (actorRole === "SUPER_ADMIN" && actorId) {
+    const myHostelLinks = await prisma.userHostel.findMany({
+      where: { userId: actorId },
+      select: { hostelId: true }
+    });
+    const myHostelIds = myHostelLinks.map(h => h.hostelId);
+    where.hostelId = { in: myHostelIds };
+  }
+
+  const invites = await prisma.invite.findMany({
+    where,
+    orderBy: { createdAt: "desc" },
+    include: {
+      hostel: { select: { name: true } }
+    }
+  });
+
+  return invites;
+};
+
+
+const resend = new Resend(process.env.RESEND_API_KEY || 're_dummy');
+
+// ✅ Send Invite Email
+export const sendInviteEmailService = async ({ code, email, originUrl }) => {
+  const invite = await validateInviteService(code);
+
+  if (invite.type === 'EMAIL' && invite.email !== email) {
+    throw new AppError("This invite is bound to a different email address", 400);
+  }
+
+  const inviteLink = `${originUrl}/auth/signup?code=${invite.code}`;
+
+  const { data, error } = await resend.emails.send({
+    from: 'Hostel System <onboarding@resend.dev>', // Replace with custom domain later
+    to: [email],
+    subject: 'You have been invited to join the Hostel System!',
+    html: `
+      <h2>You've been invited!</h2>
+      <p>You have been invited to join as a <strong>${invite.role}</strong>.</p>
+      <p>Click the link below to accept the invitation and register:</p>
+      <a href="${inviteLink}" style="padding: 10px 20px; background-color: #4f46e5; color: white; text-decoration: none; border-radius: 5px; display: inline-block;">Accept Invite</a>
+      <p>Or use this code during registration: <strong>${invite.code}</strong></p>
+      <p>This invite expires on: ${new Date(invite.expiresAt).toLocaleString()}</p>
+    `
+  });
+
+  if (error) {
+    logger.error("Invite email send failed", { code, email, error });
+    throw new AppError("Failed to send email. Check API key.", 500);
+  }
+
+  return data;
 };

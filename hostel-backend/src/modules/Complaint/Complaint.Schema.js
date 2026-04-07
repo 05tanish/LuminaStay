@@ -8,7 +8,6 @@ export const createComplaintSchema = z.object({
 });
 
 export const updateComplaintSchema = z.object({
-  complaintID: z.string().uuid("Invalid complaint ID"),
   title: z.string().min(3, "Title must be at least 3 characters").max(200),
   description: z.string().min(10, "Description must be at least 10 characters").max(2000),
 });
@@ -16,4 +15,8 @@ export const updateComplaintSchema = z.object({
 export const updateComplaintStatusSchema = z.object({
   complaintID: z.string().uuid("Invalid complaint ID"),
   status: z.enum(["OPEN", "IN_PROGRESS", "RESOLVED"]),
+});
+
+export const addCommentSchema = z.object({
+  content: z.string().min(1, "Comment cannot be empty").max(1000),
 });

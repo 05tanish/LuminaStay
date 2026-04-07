@@ -42,8 +42,8 @@ export default function UserComplaintsPage() {
   const { mutate: createComplaint, isPending: creating } = useCreateComplaint();
   const { mutate: deleteComplaint } = useDeleteComplaint();
 
-  const complaints: any[] = data?.data ?? [];
-  const total: number = data?.total ?? 0;
+  const complaints: any[] = data?.complaints ?? data?.data ?? [];
+  const total: number = data?.pagination?.total ?? data?.total ?? 0;
   const totalPages = Math.ceil(total / 20);
 
   const form = useForm<ComplaintValues>({

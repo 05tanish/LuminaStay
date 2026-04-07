@@ -11,6 +11,8 @@ export const authApi = {
     api.post("/auth/login", data),
   logout: () => api.post("/auth/logout"),
   me: () => api.get("/user/me"),
+  updateProfile: (data: { name?: string; phone?: string }) => api.patch("/user/me", data),
+  requestProfileUpdate: (data: { changes: any; reason: string }) => api.post("/user/profile-request", data),
   sendOtp: (phone: string) => api.post("/auth/otp/send", { phone }),
   registerWithInvite: (data: {
     code: string;
@@ -25,11 +27,26 @@ export const authApi = {
 // ─── Hostel ──────────────────────────────────────────────────────────────────
 
 export const hostelApi = {
-  getAll: (params?: { page?: number; limit?: number }) => api.get("/hostel", { params }),
+  getAll: (params?: { page?: number; limit?: number; search?: string }) => api.get("/hostel", { params }),
   create: (data: { name: string; address: string }) =>
-    api.post("/super-admin", data),
+    api.post("/hostel", data),
+  delete: (id: string, mode: 'soft' | 'hard' = 'soft') =>
+    api.delete(`/hostel/${id}?mode=${mode}`),
+  transfer: (id: string, targetHostelId: string) =>
+    api.post(`/hostel/${id}/transfer`, { targetHostelId }),
   assignAdmin: (data: { userId: string; hostelId: string }) =>
     api.post("/super-admin/assign-admin", data),
+};
+
+// ─── Super Admin ─────────────────────────────────────────────────────────────
+
+export const superAdminApi = {
+  getStats: () => api.get("/super-admin/stats"),
+  getAdmins: () => api.get("/super-admin/admins"),
+  reassignAdmin: (userId: string, hostelId: string) =>
+    api.patch(`/super-admin/admins/${userId}/reassign`, { hostelId }),
+  deleteAdmin: (userId: string) =>
+    api.delete(`/super-admin/admins/${userId}`),
 };
 
 // ─── Rooms & Beds ─────────────────────────────────────────────────────────────
@@ -37,12 +54,12 @@ export const hostelApi = {
 export const roomApi = {
   getAll: (hostelId?: string) =>
     api.get("/rooms", { params: hostelId ? { hostelId } : {} }),
-  create: (data: { roomNo: string; capacity: number; hostelId: string }) =>
+  create: (data: { roomNo: string; capacity: number }) =>
     api.post("/rooms", data),
   assignBed: (data: { userId: string; bedId: string }) =>
     api.post("/rooms/assign-bed", data),
-  vacateBed: (data: { userId: string }) =>
-    api.post("/rooms/vacate-bed", data),
+  vacateBed: (bedId: string) =>
+    api.post("/rooms/vacate-bed", { bedId }),
 };
 
 // ─── Users (Admin) ───────────────────────────────────────────────────────────
@@ -53,6 +70,7 @@ export const usersApi = {
   create: (data: {
     name: string;
     email: string;
+    phone: string;
     password: string;
     role: string;
     hostelId?: string;
@@ -60,6 +78,9 @@ export const usersApi = {
   delete: (userId: string) => api.delete(`/admin/users/${userId}`),
   updateRole: (userId: string, role: string) =>
     api.patch(`/admin/users/${userId}/role`, { role }),
+  getProfileRequests: () => api.get("/admin/profile-requests"),
+  respondProfileRequest: (id: string, data: { status: string; adminComment?: string }) =>
+    api.patch(`/admin/profile-requests/${id}`, data),
 };
 
 // ─── Complaints ───────────────────────────────────────────────────────────────
@@ -74,15 +95,17 @@ export const complaintApi = {
     api.put(`/complaint/${id}`, data),
   updateStatus: (complaintID: string, status: string) =>
     api.patch("/complaint/status", { complaintID, status }),
+  getAdminComplaints: (params?: { page?: number; limit?: number }) =>
+    api.get("/complaint/admin", { params }),
 };
 
 // ─── Food ────────────────────────────────────────────────────────────────────
 
 export const foodApi = {
-  getWeekly: () => api.get("/food/weekly"),
-  getByDate: (date: string) => api.get(`/food/${date}`),
-  upsert: (date: string, meals: object) =>
-    api.post("/food", { date, meals }),
+  getWeekly: (startDate?: string) => api.get("/food/menu/weekly", { params: { startDate } }),
+  getByDate: (date: string) => api.get("/food/menu", { params: { date } }),
+  upsert: (date: string, meals: { type: string; items: string[] }[]) =>
+    api.post("/food/menu", { date, meals }),
 };
 
 // ─── Payments ────────────────────────────────────────────────────────────────
@@ -121,6 +144,8 @@ export const paymentApi = {
     transactionId?: string;
     remarks?: string;
   }) => api.post("/payment/cash", data),
+  // Revenue
+  getRevenue: () => api.get("/payment/revenue"),
 };
 
 // ─── Notifications ────────────────────────────────────────────────────────────
@@ -130,9 +155,9 @@ export const notificationApi = {
     api.get("/user/notifications", { params }),
   markRead: (id: string) => api.patch(`/user/notifications/${id}/read`),
   broadcast: (data: { title: string; message: string }) =>
-    api.post("/admin/notifications/broadcast", data),
+    api.post("/notification/broadcast", data),
   sendToUser: (data: { userId: string; title: string; message: string }) =>
-    api.post("/admin/notifications/user", data),
+    api.post("/notification/user", data),
 };
 
 // ─── Invites ─────────────────────────────────────────────────────────────────
@@ -144,6 +169,10 @@ export const inviteApi = {
     type: string;
     email?: string;
   }) => api.post("/invite", data),
-  getAll: (hostelId: string) => api.get(`/invite/${hostelId}`),
-  validate: (code: string) => api.get(`/invite/validate/${code}`),
+  getAll: (hostelId: string) => api.get(`/invite/hostel/${hostelId}`),
+  getGlobalAll: () => api.get(`/invite/all`),
+  validate: (code: string) => api.get(`/invite/${code}`),
+  delete: (id: string) => api.delete(`/invite/${id}`),
+  sendEmailShare: (data: { code: string; email: string; originUrl: string }) =>
+    api.post("/invite/email-share", data),
 };

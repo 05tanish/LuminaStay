@@ -1,43 +1,84 @@
 import { prisma } from "../../config/db.js";
 import AppError from "../../utils/AppError.js";
+import { logger } from "../../utils/logger.js";
 
 
 // Create Room + Auto Create Beds
-export const createRoomService = async (roomNo, capacity, hostelId) => {
- const hostel = await prisma.hostel.findUnique({
-    where: { id: hostelId }
+export const createRoomService = async ({
+  roomNo,
+  capacity,
+  hostelId,
+  userId
+}) => {
+  if (!roomNo || capacity < 1 || capacity > 20) {
+    throw new AppError("Invalid room data: capacity must be between 1 and 20", 400);
+  }
+
+  const hostel = await prisma.hostel.findFirst({
+    where: {
+      id: hostelId,
+      isDeleted: false
+    }
   });
 
   if (!hostel) {
-    throw new AppError("Hostel not found", 404);
+    throw new AppError("Hostel not found or access denied", 404);
   }
-  return await prisma.$transaction(async (tx) => {
 
-    // 1️⃣ create room
-    const room = await tx.room.create({
-      data: {
-        roomNo,
-        capacity,
-        hostelId
-      }
+  const existingRoom = await prisma.room.findFirst({
+    where: { roomNo, hostelId }
+  });
+
+  if (existingRoom) {
+    throw new AppError("Room already exists in this hostel", 400);
+  }
+
+  try {
+    const result = await prisma.$transaction(async (tx) => {
+      const room = await tx.room.create({
+        data: {
+          roomNo,
+          capacity,
+          hostelId
+        }
+      });
+
+      const beds = Array.from({ length: capacity }).map((_, i) => ({
+        bedNo: `B${i + 1}`,
+        roomId: room.id
+      }));
+
+      await tx.bed.createMany({ data: beds });
+
+      return await tx.room.findUnique({
+        where: { id: room.id },
+        include: { beds: true }
+      });
     });
 
-    // 2️⃣ create beds automatically
-    const beds = Array.from({ length: capacity }).map((_, i) => ({
-      bedNo: `B${i + 1}`,
-      roomId: room.id
-    }));
+    logger.info("Room created", {
+      roomId: result.id,
+      roomNo,
+      hostelId,
+      capacity
+    });
 
-    await tx.bed.createMany({ data: beds });
+    return result;
 
-    return room;
-  });
+  } catch (error) {
+    logger.error("Room creation failed", {
+      roomNo,
+      hostelId,
+      error: error.message
+    });
+
+    throw new AppError("Failed to create room", 500);
+  }
 };
-
 
 // Get all rooms with occupancy
 export const getRoomsService = async (hostelId) => {
-const hostel = await prisma.hostel.findUnique({
+  const hostel = await prisma.hostel.findUnique({
     where: { id: hostelId }
   });
 
@@ -70,7 +111,7 @@ const hostel = await prisma.hostel.findUnique({
 
 // Assign bed to user
 export const assignBedService = async (userId, bedId) => {
-const user = await prisma.user.findUnique({
+  const user = await prisma.user.findUnique({
     where: { id: userId }
   });
 
@@ -105,6 +146,7 @@ const user = await prisma.user.findUnique({
       }
     });
 
+    logger.info("Bed assigned", { userId, bedId, roomId: bed.roomId });
     return updatedUser;
   });
 };
@@ -135,6 +177,7 @@ export const vacateBedService = async (bedId) => {
       data: { userId: null }
     });
 
+    logger.info("Bed vacated", { bedId, previousUserId: bed.userId });
     return { success: true };
   });
 };

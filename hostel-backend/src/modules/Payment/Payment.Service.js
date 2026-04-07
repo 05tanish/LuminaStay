@@ -1,12 +1,16 @@
-// Added pagination to payment list endpoints
 import { prisma } from "../../config/db.js";
 import { razorpay } from "../../config/razorpay.js";
 import AppError from "../../utils/AppError.js";
-
+import { logger } from "../../utils/logger.js";
 export const createOrderService = async ({ userId, monthlyFeeId }) => {
 
   const fee = await prisma.monthlyFee.findUnique({
     where: { id: monthlyFeeId }
+  });
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { hostelId: true }
   });
 
   if (!fee) throw new AppError("Fee not found", 404);
@@ -15,43 +19,63 @@ export const createOrderService = async ({ userId, monthlyFeeId }) => {
     throw new AppError("Already paid", 400);
   }
 
-  //  Verify the fee belongs to the requesting user
   if (fee.userId !== userId) {
     throw new AppError("You can only pay your own fees", 403);
   }
 
-  // Create Razorpay order
-  const order = await razorpay.orders.create({
-    amount: fee.amount * 100,
-    currency: "INR",
-    receipt: `receipt_${fee.id}`
-  });
+  try {
+    const order = await razorpay.orders.create({
+      amount: fee.amount * 100,
+      currency: "INR",
+      receipt: `receipt_${fee.id}`
+    });
 
-  // Check existing payment
-  const existing = await prisma.payment.findUnique({
-    where: { monthlyFeeId }
-  });
+    await prisma.$transaction(async (tx) => {
 
-  if (existing) {
-    await prisma.payment.update({
-      where: { id: existing.id },
-      data: {
-        razorpayOrderId: order.id
+      const existing = await tx.payment.findUnique({
+        where: { monthlyFeeId }
+      });
+
+      if (existing) {
+        await tx.payment.update({
+          where: { id: existing.id },
+          data: {
+            razorpayOrderId: order.id,
+            hostelId: user.hostelId
+          }
+        });
+      } else {
+        await tx.payment.create({
+          data: {
+            userId,
+            monthlyFeeId,
+            amount: fee.amount,
+            mode: "ONLINE",
+            razorpayOrderId: order.id,
+            hostelId: user.hostelId
+          }
+        });
       }
     });
-  } else {
-    await prisma.payment.create({
-      data: {
-        userId,
-        monthlyFeeId,
-        amount: fee.amount,
-        mode: "ONLINE",
-        razorpayOrderId: order.id
-      }
+
+    logger.info("Razorpay order created", {
+      orderId: order.id,
+      userId,
+      monthlyFeeId,
+      amount: fee.amount
     });
+
+    return order;
+
+  } catch (error) {
+    logger.error("Order creation failed", {
+      userId,
+      monthlyFeeId,
+      error: error.message
+    });
+
+    throw new AppError("Failed to create order", 500);
   }
-
-  return order;
 };
 
 export const cashPaymentService = async ({
@@ -65,6 +89,11 @@ export const cashPaymentService = async ({
     where: { id: monthlyFeeId }
   });
 
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { hostelId: true }
+  });
+
   if (!fee) {
     throw new AppError("Fee not found", 404);
   }
@@ -73,8 +102,6 @@ export const cashPaymentService = async ({
     throw new AppError("Already paid", 400);
   }
 
-  //  Use transaction for atomicity — both payment record and fee status
-  // must be updated together or not at all
   await prisma.$transaction(async (tx) => {
     const existing = await tx.payment.findUnique({
       where: { monthlyFeeId }
@@ -87,7 +114,8 @@ export const cashPaymentService = async ({
           status: "PAID",
           mode: "CASH",
           collectedByAdminId: adminId,
-          remarks
+          remarks,
+          hostelId: user.hostelId
         }
       });
     } else {
@@ -99,7 +127,8 @@ export const cashPaymentService = async ({
           mode: "CASH",
           status: "PAID",
           collectedByAdminId: adminId,
-          remarks
+          remarks,
+          hostelId: user.hostelId
         }
       });
     }
@@ -113,10 +142,11 @@ export const cashPaymentService = async ({
     });
   });
 
+  logger.info("Cash payment recorded", { userId, monthlyFeeId, adminId, amount: fee.amount });
   return true;
 };
 
-//  Added pagination
+
 export const getUserPaymentHistoryService = async (userId, page = 1, limit = 20) => {
   const skip = (page - 1) * limit;
 
@@ -146,12 +176,24 @@ export const getUserPaymentHistoryService = async (userId, page = 1, limit = 20)
   };
 };
 
-//  Added pagination
-export const getAllPaymentsService = async (page = 1, limit = 20) => {
+export const getAllPaymentsService = async (page = 1, limit = 20, actorId = null, actorRole = null) => {
   const skip = (page - 1) * limit;
+
+  let where = {};
+
+  // SUPER_ADMIN can only see payments from their own hostels
+  if (actorRole === "SUPER_ADMIN" && actorId) {
+    const myHostelLinks = await prisma.userHostel.findMany({
+      where: { userId: actorId },
+      select: { hostelId: true }
+    });
+    const myHostelIds = myHostelLinks.map(h => h.hostelId);
+    where.hostelId = { in: myHostelIds };
+  }
 
   const [payments, total] = await Promise.all([
     prisma.payment.findMany({
+      where,
       include: {
         user: {
           select: {
@@ -168,7 +210,7 @@ export const getAllPaymentsService = async (page = 1, limit = 20) => {
       skip,
       take: limit
     }),
-    prisma.payment.count()
+    prisma.payment.count({ where })
   ]);
 
   return {
@@ -180,4 +222,44 @@ export const getAllPaymentsService = async (page = 1, limit = 20) => {
       totalPages: Math.ceil(total / limit)
     }
   };
+};
+
+export const getRevenueByHostelService = async (hostelId, actorId = null, actorRole = null) => {
+  // SUPER_ADMIN can only access revenue from their own hostels
+  if (actorRole === "SUPER_ADMIN" && actorId) {
+    const ownership = await prisma.userHostel.findFirst({
+      where: { userId: actorId, hostelId }
+    });
+    if (!ownership) {
+      throw new AppError("Hostel not found in your workspace", 404);
+    }
+  }
+
+  const result = await prisma.payment.aggregate({
+    _sum: { amount: true },
+    where: { hostelId, status: "PAID" }
+  });
+
+  return { totalRevenue: result._sum.amount || 0 };
+};
+
+export const getPlatformRevenueService = async (actorId = null, actorRole = null) => {
+  let where = { status: "PAID" };
+
+  // SUPER_ADMIN can only see revenue from their own hostels
+  if (actorRole === "SUPER_ADMIN" && actorId) {
+    const myHostelLinks = await prisma.userHostel.findMany({
+      where: { userId: actorId },
+      select: { hostelId: true }
+    });
+    const myHostelIds = myHostelLinks.map(h => h.hostelId);
+    where.hostelId = { in: myHostelIds };
+  }
+
+  const result = await prisma.payment.aggregate({
+    _sum: { amount: true },
+    where
+  });
+
+  return { totalRevenue: result._sum.amount || 0 };
 };

@@ -4,11 +4,13 @@ import {
   createRoom,
   getRooms,
   assignBed,
-  vacateBed
+  vacateBed,
 } from "./Room.Controller.js";
 
 import { protect } from "../../middleware/Authentification.Middleware.js";
 import { authorize } from "../../middleware/authorization.Middleware.js";
+import { validate } from "../../middleware/Validate.Middleware.js";
+import { createRoomSchema, assignBedSchema, vacateBedSchema } from "./Room.Schema.js";
 
 const router = Router();
 
@@ -45,7 +47,7 @@ const router = Router();
  *       201:
  *         description: Room created successfully
  */
-router.post("/", protect, authorize("ADMIN"), createRoom);
+router.post("/", protect, authorize("ADMIN"), validate(createRoomSchema), createRoom);
 /**
  * @swagger
  * /api/rooms:
@@ -90,7 +92,7 @@ router.get("/", protect, getRooms);
  *       200:
  *         description: Bed assigned successfully
  */
-router.post("/assign-bed", protect, authorize("ADMIN"), assignBed);
+router.post("/assign-bed", protect, authorize("ADMIN"), validate(assignBedSchema), assignBed);
 /**
  * @swagger
  * /api/rooms/vacate-bed:
@@ -113,6 +115,5 @@ router.post("/assign-bed", protect, authorize("ADMIN"), assignBed);
  *       200:
  *         description: Bed vacated successfully
  */
-router.post("/vacate-bed", protect, authorize("ADMIN"), vacateBed);
-
+router.post("/vacate-bed", protect, authorize("ADMIN"), validate(vacateBedSchema), vacateBed);
 export default router;

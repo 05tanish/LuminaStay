@@ -45,6 +45,7 @@ import {
 const createUserSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   email: z.string().email("Invalid email"),
+  phone: z.string().min(10, "Phone number must be at least 10 digits"),
   password: z.string().min(6, "Password must be at least 6 characters"),
   role: z.enum(["USER", "ADMIN"]),
 });
@@ -61,13 +62,13 @@ export default function AdminUsersPage() {
   const { mutate: createUser, isPending: creating } = useCreateUser();
   const { mutate: deleteUser } = useDeleteUser();
 
-  const users: any[] = data?.data ?? [];
-  const total: number = data?.total ?? 0;
+  const users: any[] = data?.users ?? data?.data ?? [];
+  const total: number = data?.pagination?.total ?? data?.total ?? 0;
   const totalPages = Math.ceil(total / 20);
 
   const form = useForm<CreateUserValues>({
     resolver: zodResolver(createUserSchema),
-    defaultValues: { name: "", email: "", password: "", role: "USER" },
+    defaultValues: { name: "", email: "", phone: "", password: "", role: "USER" },
   });
 
   function onSubmit(values: CreateUserValues) {
@@ -80,16 +81,16 @@ export default function AdminUsersPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Residents</h1>
-          <p className="text-muted-foreground text-sm">
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Residents</h1>
+          <p className="text-muted-foreground text-xs sm:text-sm">
             {total} total users in your hostel
           </p>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger render={<Button className="bg-indigo-600 hover:bg-indigo-700 text-white gap-2" />}>
+          <DialogTrigger render={<Button className="bg-indigo-600 hover:bg-indigo-700 text-white gap-2 w-full sm:w-auto" />}>
             <UserPlus className="h-4 w-4" />
             Add User
           </DialogTrigger>
@@ -120,6 +121,19 @@ export default function AdminUsersPage() {
                       <FormLabel>Email</FormLabel>
                       <FormControl>
                         <Input placeholder="john@example.com" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="phone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Phone Number</FormLabel>
+                      <FormControl>
+                        <Input placeholder="+91 9876543210" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -184,8 +198,8 @@ export default function AdminUsersPage() {
         />
       </div>
 
-      {/* Table */}
-      <div className="rounded-xl border bg-card overflow-hidden">
+      {/* Table - Desktop */}
+      <div className="hidden md:block rounded-xl border bg-card overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/50">
@@ -251,17 +265,84 @@ export default function AdminUsersPage() {
         </Table>
       </div>
 
+      {/* Cards - Mobile */}
+      <div className="md:hidden space-y-4">
+        {isLoading
+          ? Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="rounded-xl border bg-card p-4">
+                <Skeleton className="h-6 w-3/4 mb-2" />
+                <Skeleton className="h-4 w-full mb-2" />
+                <Skeleton className="h-4 w-1/2" />
+              </div>
+            ))
+          : users.map((user) => (
+              <div key={user.id} className="rounded-xl border bg-card p-4 space-y-3">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-base">{user.name}</h3>
+                    <p className="text-sm text-muted-foreground mt-1">{user.email}</p>
+                    {user.phone && (
+                      <p className="text-sm text-muted-foreground">{user.phone}</p>
+                    )}
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-rose-500 hover:text-rose-600 hover:bg-rose-50 shrink-0"
+                    onClick={() => deleteUser(user.id)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+                <div className="flex items-center gap-3 pt-2 border-t">
+                  <Badge
+                    variant="outline"
+                    className={
+                      user.role === "ADMIN"
+                        ? "bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950 dark:text-indigo-300"
+                        : "bg-zinc-50 text-zinc-700 border-zinc-200 dark:bg-zinc-800 dark:text-zinc-300"
+                    }
+                  >
+                    {user.role}
+                  </Badge>
+                  {user.room && (
+                    <span className="text-sm text-muted-foreground">
+                      Room {user.room.roomNo}
+                    </span>
+                  )}
+                </div>
+              </div>
+            ))}
+        {!isLoading && users.length === 0 && (
+          <div className="rounded-xl border bg-card p-12 text-center text-muted-foreground">
+            No users found. Add your first resident!
+          </div>
+        )}
+      </div>
+
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+          <p className="text-xs sm:text-sm text-muted-foreground">
             Page {page} of {totalPages}
           </p>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" disabled={page === 1} onClick={() => setPage((p) => p - 1)}>
+          <div className="flex gap-2 w-full sm:w-auto">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              disabled={page === 1} 
+              onClick={() => setPage((p) => p - 1)}
+              className="flex-1 sm:flex-none"
+            >
               Previous
             </Button>
-            <Button variant="outline" size="sm" disabled={page === totalPages} onClick={() => setPage((p) => p + 1)}>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              disabled={page === totalPages} 
+              onClick={() => setPage((p) => p + 1)}
+              className="flex-1 sm:flex-none"
+            >
               Next
             </Button>
           </div>

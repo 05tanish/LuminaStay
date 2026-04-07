@@ -1,5 +1,5 @@
 import AppError from "../../utils/AppError.js";
-import { asyncHandler } from "../../utils/asyncHandler.js";
+import { asyncHandler } from "../../utils/AsyncHandler.js";
 import { successResponse } from "../../utils/ApiResponse.js";
 
 import {
@@ -28,19 +28,15 @@ export const upsertMenu = asyncHandler(async (req, res) => {
 });
 
 
-// GET DAILY
+// GET DAILY — defaults to today if no date provided
 export const getMenu = asyncHandler(async (req, res) => {
-  const { date } = req.query;
-
-  if (!date) {
-    throw new AppError("Date is required", 400);
-  }
+  const date = req.query.date || new Date().toISOString().split('T')[0];
 
   const menu = await getMenuByDateService(date);
 
   return successResponse(res, {
     statusCode: 200,
-    message: "Menu fetched successfully",
+    message: menu ? "Menu fetched successfully" : "No menu set for this date",
     data: menu
   });
 });

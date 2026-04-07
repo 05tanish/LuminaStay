@@ -1,6 +1,6 @@
 import { Router } from "express";
 
-import { getMe, getUserFees } from "./User.Controller.js";
+import { getMe, updateMe, getUserFees, requestProfileUpdate, deleteMyAccount } from "./User.Controller.js";
 import {
    getUserNotifications,
    markNotificationRead
@@ -40,6 +40,9 @@ router.use(protect);
  *         description: Not authenticated
  */
 router.get("/me", getMe);
+router.patch("/me", updateMe);
+router.delete("/me", deleteMyAccount);
+router.post("/profile-request", requestProfileUpdate);
 
 
 /* ==============================

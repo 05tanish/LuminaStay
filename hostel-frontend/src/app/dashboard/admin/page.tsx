@@ -1,28 +1,30 @@
 "use client";
 
 import { useAuthStore } from "@/store/auth-store";
-import { useComplaints, useUsers, useRooms, useAdminFees, useHostels } from "@/hooks/use-api";
+import { useComplaints, useAdminComplaints, useUsers, useRooms, useHostels } from "@/hooks/use-api";
+import { useHostelStats } from "@/lib/api-hooks";
 import { StatCard } from "@/components/stat-card";
 import { Users, Bed, MessageSquareWarning, CreditCard, CheckCircle, Clock } from "lucide-react";
 
 export default function AdminDashboardPage() {
   const user = useAuthStore((s) => s.user);
   const { data: usersData, isLoading: usersLoading } = useUsers();
-  const { data: complaintsData, isLoading: complaintsLoading } = useComplaints();
-  const { data: roomsData, isLoading: roomsLoading } = useRooms();
-  const { data: feesData, isLoading: feesLoading } = useAdminFees({ status: "PENDING" });
+  const { data: complaintsData, isLoading: complaintsLoading } = useAdminComplaints();
+  const { data: roomsData, isLoading: roomsLoading } = useRooms(user?.hostelId);
+  const { data: statsData, isLoading: statsLoading } = useHostelStats(user?.hostelId || "");
 
-  const totalUsers = usersData?.total ?? 0;
-  const totalComplaints = complaintsData?.total ?? 0;
-  const pendingFees = feesData?.total ?? 0;
-  const openComplaints = complaintsData?.data?.filter((c: any) => c.status === "OPEN").length ?? 0;
+  const totalUsers = usersData?.pagination?.total ?? usersData?.total ?? 0;
+  const totalComplaints = complaintsData?.pagination?.total ?? complaintsData?.total ?? 0;
+  const pendingFees = statsData?.pendingFees ?? 0;
+  const openComplaints = (complaintsData?.complaints ?? complaintsData?.data ?? []).filter((c: any) => c.status === "OPEN").length ?? 0;
 
   return (
     <div className="space-y-8">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
         <p className="text-muted-foreground mt-1">
-          Welcome back, <span className="font-medium text-foreground">{user?.name}</span>. Here's your hostel overview.
+          Welcome back, <span className="font-medium text-foreground">{user?.name}</span>. Here's your overview for{" "}
+          <span className="font-medium text-indigo-500">{(user as any)?.hostel?.name || "your assigned hostel"}</span>.
         </p>
       </div>
 
@@ -53,7 +55,7 @@ export default function AdminDashboardPage() {
           value={pendingFees}
           description="Unpaid this cycle"
           icon={<CreditCard className="h-4 w-4 text-amber-500" />}
-          loading={feesLoading}
+          loading={statsLoading}
         />
       </div>
 
@@ -71,7 +73,7 @@ export default function AdminDashboardPage() {
           </div>
         ) : (
           <div className="divide-y">
-            {(complaintsData?.data ?? []).slice(0, 5).map((c: any) => (
+            {(complaintsData?.complaints ?? complaintsData?.data ?? []).slice(0, 5).map((c: any) => (
               <div key={c.id} className="py-3 flex items-center justify-between">
                 <div>
                   <p className="font-medium text-sm">{c.title}</p>
@@ -92,7 +94,7 @@ export default function AdminDashboardPage() {
                 </span>
               </div>
             ))}
-            {(complaintsData?.data ?? []).length === 0 && (
+            {(complaintsData?.complaints ?? complaintsData?.data ?? []).length === 0 && (
               <p className="text-center text-muted-foreground py-6 text-sm">No complaints yet — great job! 🎉</p>
             )}
           </div>

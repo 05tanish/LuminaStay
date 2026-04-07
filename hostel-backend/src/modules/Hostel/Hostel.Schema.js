@@ -13,3 +13,13 @@ export const updateHostelSchema = z.object({
 }).refine(data => data.name || data.address, {
   message: "At least one field (name or address) must be provided",
 });
+
+export const transferHostelSchema = z.object({
+  targetHostelId: z.string().uuid("Invalid target hostel ID format")
+}); 
+export const getHostelStatsSchema = z.object({
+  id: z.string().uuid("Invalid hostel ID format")
+});
+export const idparamsSchema = z.object({
+  id: z.string().uuid("Invalid ID format")
+});

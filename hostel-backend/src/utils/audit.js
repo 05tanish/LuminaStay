@@ -13,6 +13,7 @@ import { logger } from "./logger.js";
  */
 export const auditLog = ({ action, actorId, targetId = null, details = {} }) => {
   logger.info(`AUDIT: ${action}`, {
+    type: "AUDIT",
     action,
     actorId,
     targetId,

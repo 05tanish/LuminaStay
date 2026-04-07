@@ -19,3 +19,6 @@ export const weeklyMenuSchema = z.object({
     meals: z.array(mealItemSchema).min(1),
   })).min(1, "At least one daily menu is required"),
 });
+export const getMenuSchema = z.object({
+  date: z.string().min(1, "Date is required"),
+});

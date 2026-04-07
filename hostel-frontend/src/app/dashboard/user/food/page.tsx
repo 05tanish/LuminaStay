@@ -14,7 +14,7 @@ export default function UserFoodMenu() {
   const getMealItems = (type: string) => {
     if (!menuData || !menuData.meals) return [];
     const meal = menuData.meals.find((m: any) => m.type === type);
-    return meal?.items || [];
+    return meal?.items?.map((i: any) => i.name ?? i) ?? [];
   };
 
   const breakfast = getMealItems("BREAKFAST");

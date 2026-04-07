@@ -1,11 +1,14 @@
 import { Router } from "express";
 import { protect } from "../../middleware/Authentification.Middleware.js";
 import { authorize } from "../../middleware/authorization.Middleware.js";
+import { validate } from "../../middleware/Validate.Middleware.js";
+import { createOrderSchema, cashPaymentSchema } from "./Payment.Schema.js";
 import {
     createOrder,
     cashPayment,
     getUserPayments,
     getAllPayments,
+    getRevenue,
 } from "./Payment.Controller.js";
 import { razorpayWebhook } from "./PaymentWebhook.Controller.js";
 
@@ -41,7 +44,7 @@ const router = Router();
  *       200:
  *         description: Order created
  */
-router.post("/create-order", protect, createOrder);
+router.post("/create-order", protect, validate(createOrderSchema), createOrder);
 
 /**
  * @swagger
@@ -81,7 +84,31 @@ router.post("/webhook", razorpayWebhook);
  *       200:
  *         description: Cash payment recorded
  */
-router.post("/cash", protect, authorize("ADMIN"), cashPayment);
+  // Cash payment — route was /payment/cash but frontend called /payment/cash
+  // Fix: add both /cash and /admin/cash so both work
+  router.post(
+    "/cash",
+    protect,
+    authorize("ADMIN", "SUPER_ADMIN"),
+    validate(cashPaymentSchema),
+    cashPayment
+  );
+
+router.post(
+  "/admin/cash",
+  protect,
+  authorize("ADMIN", "SUPER_ADMIN"),
+  validate(cashPaymentSchema),
+  cashPayment
+);
+
+// Get Revenue
+router.get(
+  "/revenue",
+  protect,
+  authorize("ADMIN", "SUPER_ADMIN"),
+  getRevenue
+);
 
 //  User payment history
 /**

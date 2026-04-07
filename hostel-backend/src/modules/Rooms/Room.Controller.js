@@ -10,15 +10,24 @@ import {
 } from "../Rooms/Room.Service.js";
 
 
-// Create Room
 export const createRoom = asyncHandler(async (req, res) => {
-  const { roomNo, capacity, hostelId } = req.body;
+  const { roomNo, capacity } = req.body;
+  const user = req.user;
 
-  if (!roomNo || !capacity || !hostelId) {
-    throw new AppError("All fields are required", 400);
+  if (user.role !== "ADMIN" && user.role !== "SUPER_ADMIN") {
+    throw new AppError("Unauthorized", 403);
   }
 
-  const room = await createRoomService(roomNo, capacity, hostelId);
+  if (!user.hostelId) {
+    throw new AppError("Your account is not linked to any hostel. Please contact Super Admin.", 400);
+  }
+
+  const room = await createRoomService({
+    roomNo,
+    capacity,
+    hostelId: user.hostelId,
+    userId: user.id
+  });
 
   return successResponse(res, {
     statusCode: 201,
@@ -28,12 +37,13 @@ export const createRoom = asyncHandler(async (req, res) => {
 });
 
 
-// Get Rooms
+// Get Rooms — uses hostelId from query OR from authenticated user's session
 export const getRooms = asyncHandler(async (req, res) => {
-  const { hostelId } = req.query;
+  // Prefer explicit query param, fall back to the logged-in user's hostelId
+  const hostelId = req.query.hostelId || req.user.hostelId;
 
   if (!hostelId) {
-    throw new AppError("hostelId is required", 400);
+    throw new AppError("hostelId is required. Your account is not linked to a hostel.", 400);
   }
 
   const rooms = await getRoomsService(hostelId);
