@@ -11,7 +11,7 @@ const globalErrorHandler = (err, req, res, next) => {
     err = new AppError(`Duplicate value for ${field}`, 409);
   }
 
-  // [REVIEW] Prisma record not found
+  //  Prisma record not found
   if (err.code === 'P2025') {
     err = new AppError('Record not found', 404);
   }

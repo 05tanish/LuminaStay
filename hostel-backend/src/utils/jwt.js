@@ -4,7 +4,7 @@ import { JWT_SECRET, JWT_REFRESH_SECRET } from '../config/env.js'
 // Access token — short-lived (15 min)
 // Used for authenticating API requests. Short expiry limits damage if token is stolen.
 export const signAccessToken = (payload) => {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: '15m' })
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: '15' })
 }
 
 // Refresh token — long-lived (7 days)
