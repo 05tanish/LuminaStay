@@ -1,7 +1,7 @@
 import { prisma } from "../../config/db.js";
 import AppError from "../../utils/AppError.js";
-import { Resend } from 'resend';
 import { logger } from "../../utils/logger.js";
+import { sendInviteEmail } from "../../utils/Email.Service.js";
 // 🔹 Generate random code
 const generateCode = () => {
   return Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -188,8 +188,6 @@ export const getAllInvitesService = async (actorId = null, actorRole = null) => 
 };
 
 
-const resend = new Resend(process.env.RESEND_API_KEY || 're_dummy');
-
 // ✅ Send Invite Email
 export const sendInviteEmailService = async ({ code, email, originUrl }) => {
   const invite = await validateInviteService(code);
@@ -200,24 +198,19 @@ export const sendInviteEmailService = async ({ code, email, originUrl }) => {
 
   const inviteLink = `${originUrl}/auth/signup?code=${invite.code}`;
 
-  const { data, error } = await resend.emails.send({
-    from: 'Hostel System <onboarding@resend.dev>', // Replace with custom domain later
-    to: [email],
-    subject: 'You have been invited to join the Hostel System!',
-    html: `
-      <h2>You've been invited!</h2>
-      <p>You have been invited to join as a <strong>${invite.role}</strong>.</p>
-      <p>Click the link below to accept the invitation and register:</p>
-      <a href="${inviteLink}" style="padding: 10px 20px; background-color: #4f46e5; color: white; text-decoration: none; border-radius: 5px; display: inline-block;">Accept Invite</a>
-      <p>Or use this code during registration: <strong>${invite.code}</strong></p>
-      <p>This invite expires on: ${new Date(invite.expiresAt).toLocaleString()}</p>
-    `
-  });
+  try {
+    await sendInviteEmail({
+      email,
+      inviteLink,
+      code: invite.code,
+      role: invite.role,
+      expiresAt: invite.expiresAt
+    });
 
-  if (error) {
-    logger.error("Invite email send failed", { code, email, error });
-    throw new AppError("Failed to send email. Check API key.", 500);
+    logger.info("Invite email sent", { code, email });
+    return { success: true };
+  } catch (error) {
+    logger.error("Invite email send failed", { code, email, error: error.message });
+    throw new AppError("Failed to send email", 500);
   }
-
-  return data;
 };

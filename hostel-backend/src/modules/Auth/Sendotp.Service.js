@@ -1,10 +1,8 @@
 import { redis } from "../../config/redis.js";
 import AppError from "../../utils/AppError.js";
 import crypto from "crypto";
-import { Resend } from 'resend';
 import { logger } from "../../utils/logger.js";
-
-const resend = new Resend(process.env.RESEND_API_KEY);
+import { sendOtpEmail } from "../../utils/Email.Service.js";
 
 export const sendOtpService = async (email) => {
   try {
@@ -29,13 +27,9 @@ export const sendOtpService = async (email) => {
     // ✅ Set cooldown (60 sec)
     await redis.set(cooldownKey, "1", "EX", 60);
     logger.debug("OTP generated and stored", { email });
-    // 📩 Send via Resend
-    await resend.emails.send({
-      from: 'onboarding@resend.dev', // Default test email for Resend
-      to: email,
-      subject: 'Your Verification Code',
-      html: `<p>Your verification code is <strong>${otp}</strong>. It expires in 5 minutes.</p>`
-    });
+    
+    // 📩 Send via Email Service with professional template
+    await sendOtpEmail({ email, otp });
 
     return true;
   } catch (error) {

@@ -59,7 +59,7 @@ export const optionalAuth = asyncHandler(async (req, res, next) => {
       req.user = user;
     }
   } catch {
-    console.error('Invalid or expired token');  // Token invalid/expired — continue as anonymous
+    // Token invalid/expired — continue as anonymous (no logging needed)
   }
 
   next();

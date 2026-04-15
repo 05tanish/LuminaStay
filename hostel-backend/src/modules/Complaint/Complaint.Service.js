@@ -51,7 +51,7 @@ export const complaintService = async (title, description, userId) => {
 };
 
 // delete the complaints 
-export const deletecomplaintservice = async (complaintID, userid, user) => {
+export const deleteComplaintService = async (complaintID, userid, user) => {
 
     const complaint = await prisma.complaint.findUnique({
         where: { id: complaintID }
@@ -108,7 +108,7 @@ export const deletecomplaintservice = async (complaintID, userid, user) => {
     }
 };
 
-export const getcomplaintservice = async (userid, page = 1, limit = 20) => {
+export const getComplaintService = async (userid, page = 1, limit = 20) => {
 
     const user = await prisma.user.findUnique({
         where: {
@@ -152,7 +152,7 @@ export const getcomplaintservice = async (userid, page = 1, limit = 20) => {
 }
 
 // update complaint 
-export const updatecomplaintservice = async (complaintID, title, description, userid) => {
+export const updateComplaintService = async (complaintID, title, description, userid) => {
     if (!complaintID || !title || !description) {
         throw new AppError("All fields are required", 400);
     }

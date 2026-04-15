@@ -163,6 +163,7 @@ export const updateHostelService = async (id, data, actor) => {
       data,
       actorrole: actor.role
     })
+    throw new AppError("Failed to update hostel", 500);
   }
 };
 

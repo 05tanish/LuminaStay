@@ -10,6 +10,7 @@ import { hash_password } from '../../utils/hash.js'
 import { verifyOtpService } from './Otpverification.Service.js'
 import { validateInviteService } from '../Invitesystem/Invite.Service.js'
 import { redis } from '../../config/redis.js'
+import { sendWelcomeEmail } from '../../utils/Email.Service.js'
 
 // Register with unified logic (Invite vs Standalone)
 export const register = asyncHandler(async (req, res) => {
@@ -17,6 +18,11 @@ export const register = asyncHandler(async (req, res) => {
 
     if (!name || !email || !phone || !password) {
         throw new AppError("Name, email, phone, and password are required", 400);
+    }
+
+    // Validate password strength
+    if (password.length < 8) {
+        throw new AppError("Password must be at least 8 characters long", 400);
     }
 
     // Check if user already exists

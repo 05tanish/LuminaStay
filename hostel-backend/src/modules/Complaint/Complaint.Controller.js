@@ -3,9 +3,9 @@ import { successResponse } from "../../utils/ApiResponse.js";
 import { asyncHandler } from "../../utils/AsyncHandler.js";
 import {
     complaintService,
-    deletecomplaintservice,
-    getcomplaintservice,
-    updatecomplaintservice,
+    deleteComplaintService,
+    getComplaintService,
+    updateComplaintService,
     updateComplaintStatusService,
     getAdminComplaintsService,
     getSuperAdminComplaintsService,
@@ -36,7 +36,7 @@ export const deletecomplaint = asyncHandler(async (req, res) => {
     if (!complaintID) {
         throw new AppError("Complaint ID is required", 400);
     }
-    const result = await deletecomplaintservice(complaintID, req.user.id, req.user);
+    const result = await deleteComplaintService(complaintID, req.user.id, req.user);
 
     return successResponse(res, {
         statusCode: 200,
@@ -49,7 +49,7 @@ export const getcomplaint = asyncHandler(async (req, res) => {
 
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 20;
-    const result = await getcomplaintservice(req.user.id, page, limit);
+    const result = await getComplaintService(req.user.id, page, limit);
     return successResponse(res, {
         statusCode: 200,
         message: "Complaints retrieved successfully",
@@ -60,7 +60,7 @@ export const getcomplaint = asyncHandler(async (req, res) => {
 export const updatecomplaint = asyncHandler(async (req, res) => {
     const { complaintID } = req.params;
     const { title, description } = req.body;
-    const result = await updatecomplaintservice(complaintID, title, description, req.user.id);
+    const result = await updateComplaintService(complaintID, title, description, req.user.id);
 
     return successResponse(res, {
         statusCode: 200,
@@ -97,7 +97,6 @@ export const getAdminComplaints = asyncHandler(async (req, res) => {
     if (!req.user.hostelId) {
         throw new AppError("Admin is not assigned to a hostel", 400);
     }
-    console.log("hitted");
 
     const result = await getAdminComplaintsService(
         req.user.hostelId, page, limit, req.user, status

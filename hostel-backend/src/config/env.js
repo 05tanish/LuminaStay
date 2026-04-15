@@ -8,7 +8,10 @@ const requiredVars = [
   "JWT_REFRESH_SECRET",
   "GOOGLE_CLIENT_ID",
   "UPSTASH_REDIS_REST_URL",
-  "UPSTASH_REDIS_REST_TOKEN"
+  "UPSTASH_REDIS_REST_TOKEN",
+  "RESEND_API_KEY",
+  "EMAIL_FROM",
+  "FRONTEND_URL"
 ];
 
 for (const varName of requiredVars) {

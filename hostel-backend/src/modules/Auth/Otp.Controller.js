@@ -5,13 +5,20 @@ import { sendOtpService } from "../Auth/Sendotp.Service.js";
 import { verifyOtpService } from "../Auth/Otpverification.Service.js";
 import { redis } from "../../config/redis.js";
 import { logger } from "../../utils/logger.js";
+import { validateEmail } from "../../utils/Email.Service.js";
 
 export const sendOtp = asyncHandler(async (req, res) => {
   const { email } = req.body;
 
-  if (!email || !email.includes("@")) {
-    throw new AppError("Invalid email", 400);
+  if (!email) {
+    throw new AppError("Email is required", 400);
   }
+
+  // Validate email format using the utility function
+  if (!validateEmail(email)) {
+    throw new AppError("Invalid email format", 400);
+  }
+
   logger.info("OTP send requested", { email });
   await sendOtpService(email);
 

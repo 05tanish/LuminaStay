@@ -2,6 +2,7 @@ import { prisma } from "../../config/db.js";
 import { razorpay } from "../../config/razorpay.js";
 import AppError from "../../utils/AppError.js";
 import { logger } from "../../utils/logger.js";
+import { sendPaymentConfirmationEmail } from "../../utils/Email.Service.js";
 export const createOrderService = async ({ userId, monthlyFeeId }) => {
 
   const fee = await prisma.monthlyFee.findUnique({
@@ -14,6 +15,11 @@ export const createOrderService = async ({ userId, monthlyFeeId }) => {
   });
 
   if (!fee) throw new AppError("Fee not found", 404);
+
+  // Validate amount
+  if (!fee.amount || fee.amount <= 0) {
+    throw new AppError("Invalid fee amount", 400);
+  }
 
   if (fee.status === "PAID") {
     throw new AppError("Already paid", 400);
@@ -96,6 +102,11 @@ export const cashPaymentService = async ({
 
   if (!fee) {
     throw new AppError("Fee not found", 404);
+  }
+
+  // Validate amount
+  if (!fee.amount || fee.amount <= 0) {
+    throw new AppError("Invalid fee amount", 400);
   }
 
   if (fee.status === "PAID") {
