@@ -2,7 +2,7 @@
 import { OAuth2Client } from 'google-auth-library'
 import { prisma } from '../../config/db.js'
 import { asyncHandler } from '../../utils/AsyncHandler.js'
-import AppError from "../../utils/AppError.js"
+import { AppError } from "../../utils/AppError.js"
 import { successResponse } from '../../utils/ApiResponse.js'
 import { GOOGLE_CLIENT_ID } from '../../config/env.js'
 import { logger } from '../../utils/logger.js'

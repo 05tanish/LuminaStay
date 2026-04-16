@@ -1,6 +1,6 @@
 import { prisma } from "../../config/db.js";
 import { razorpay } from "../../config/razorpay.js";
-import AppError from "../../utils/AppError.js";
+import { AppError } from "../../utils/AppError.js";
 import { logger } from "../../utils/logger.js";
 import { sendPaymentConfirmationEmail } from "../../utils/Email.Service.js";
 export const createOrderService = async ({ userId, monthlyFeeId }) => {

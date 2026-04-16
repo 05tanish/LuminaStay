@@ -2,7 +2,7 @@
 import { prisma } from "../../config/db.js";
 import crypto from "crypto";
 import { redis } from "../../config/redis.js";
-import AppError from "../../utils/AppError.js";
+import { AppError } from "../../utils/AppError.js";
 
 export const verifyOtpService = async (email, code) => {
   // 🔥 Allow mock OTP bypass in development only

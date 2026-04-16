@@ -1,6 +1,6 @@
 import { asyncHandler } from "../../utils/AsyncHandler.js";
 import { successResponse } from "../../utils/ApiResponse.js";
-import AppError from "../../utils/AppError.js";
+import { AppError } from "../../utils/AppError.js";
 import { prisma } from "../../config/db.js";
 import { redis } from "../../config/redis.js";
 import { logger } from "../../utils/logger.js";

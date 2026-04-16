@@ -148,4 +148,4 @@ router.get("/my-payments", protect, getUserPayments);
  */
 router.get("/all", protect, authorize("ADMIN"), getAllPayments);
 
-export default router;
+export const paymentRouter = router;

@@ -51,4 +51,4 @@ router.delete("/:complaintID", protect, deletecomplaint);
 router.post("/:complaintID/comments", protect, validate(addCommentSchema), addComplaintComment);
 router.get("/:complaintID/comments", protect, getComplaintComments);
 
-export default router;
+export const complaintRouter = router;

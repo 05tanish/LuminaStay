@@ -193,4 +193,4 @@ router.post("/register",
   registerWithInvite
 );
 
-export default router;
+export const inviteRouter = router;

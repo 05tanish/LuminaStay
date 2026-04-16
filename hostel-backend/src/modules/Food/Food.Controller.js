@@ -1,4 +1,4 @@
-import AppError from "../../utils/AppError.js";
+import { AppError } from "../../utils/AppError.js";
 import { asyncHandler } from "../../utils/AsyncHandler.js";
 import { successResponse } from "../../utils/ApiResponse.js";
 

@@ -173,4 +173,4 @@ router.post("/monthly-fees", validate(createMonthlyFeeSchema), createMonthlyFee)
  */
 router.get("/monthly-fees", getMonthlyFees);
 
-export default router;
+export const adminRouter = router;

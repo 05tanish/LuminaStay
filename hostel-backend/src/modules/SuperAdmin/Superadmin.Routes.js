@@ -158,4 +158,4 @@ router.post(
   assignAdmin
 );
 
-export default router;
+export const superAdminRouter = router;

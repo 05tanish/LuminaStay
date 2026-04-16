@@ -1,6 +1,6 @@
 // Admin controller — handles admin-only operations like user creation
 import { asyncHandler } from "../../utils/AsyncHandler.js";
-import AppError from "../../utils/AppError.js";
+import { AppError } from "../../utils/AppError.js";
 import { successResponse } from "../../utils/ApiResponse.js";
 import {
   toaddnewuser,

@@ -1,5 +1,5 @@
 import { asyncHandler } from "../../utils/AsyncHandler.js";
-import AppError from "../../utils/AppError.js";
+import { AppError } from "../../utils/AppError.js";
 import { successResponse } from "../../utils/ApiResponse.js";
 import { sendOtpService } from "../Auth/Sendotp.Service.js";
 import { verifyOtpService } from "../Auth/Otpverification.Service.js";

@@ -1,5 +1,5 @@
 import "dotenv/config";
-import App from './app.js'
+import { App } from './app.js'
 import { PORT } from './config/env.js'
 import { prisma } from './config/db.js'
 import { redis } from './config/redis.js'

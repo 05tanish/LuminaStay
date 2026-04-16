@@ -1,5 +1,5 @@
 import { redis } from "../../config/redis.js";
-import AppError from "../../utils/AppError.js";
+import { AppError } from "../../utils/AppError.js";
 import crypto from "crypto";
 import { logger } from "../../utils/logger.js";
 import { sendOtpEmail } from "../../utils/Email.Service.js";

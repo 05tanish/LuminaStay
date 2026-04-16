@@ -116,4 +116,4 @@ router.post("/assign-bed", protect, authorize("ADMIN"), validate(assignBedSchema
  *         description: Bed vacated successfully
  */
 router.post("/vacate-bed", protect, authorize("ADMIN"), validate(vacateBedSchema), vacateBed);
-export default router;
+export const roomRouter = router;

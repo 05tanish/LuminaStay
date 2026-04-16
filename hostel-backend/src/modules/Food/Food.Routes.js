@@ -128,4 +128,4 @@ router.post("/menu/weekly", protect, authorize("ADMIN"), validate(weeklyMenuSche
  */
 router.get("/menu/weekly", protect, getWeeklyMenu);
 
-export default router;
+export const foodRouter = router;

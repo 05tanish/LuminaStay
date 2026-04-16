@@ -1,4 +1,4 @@
-import AppError from "./AppError.js";
+import { AppError } from "./AppError.js";
 import { logger } from "../utils/logger.js";
 import { Resend } from "resend";
 

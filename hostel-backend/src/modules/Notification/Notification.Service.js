@@ -1,5 +1,5 @@
 import { prisma } from "../../config/db.js";
-import AppError from "../../utils/AppError.js";
+import { AppError } from "../../utils/AppError.js";
 import { logger } from "../../utils/logger.js";
 
 // Broadcast to all users in a specific hostel (or all hostels if no hostelId provided)

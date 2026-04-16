@@ -174,4 +174,4 @@ router.post("/:id/transfer", protect, authorize("SUPER_ADMIN"), validate(transfe
 
 router.get("/:id/stats", protect, authorize("ADMIN", "SUPER_ADMIN"), getHostelStats);
 
-export default router;
+export const hostelRouter = router;

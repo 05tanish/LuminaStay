@@ -1,5 +1,5 @@
 import { prisma } from "../../config/db.js";
-import AppError from "../../utils/AppError.js";
+import { AppError } from "../../utils/AppError.js";
 import { logger } from "../../utils/logger.js";
 import { auditLog } from "../../utils/audit.js";
 

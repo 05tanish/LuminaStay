@@ -126,4 +126,4 @@ router.patch("/notifications/:id/read", markNotificationRead);
  */
 router.get("/my-fees", getUserFees);
 
-export default router;
+export const userRouter = router;

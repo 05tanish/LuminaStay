@@ -138,4 +138,4 @@ router.patch("/:id/read", protect, markNotificationRead);
  */
 router.get('/unread', protect, getUnreadNotifications);
 
-export default router;
+export const notificationRouter = router;

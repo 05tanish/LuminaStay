@@ -1,7 +1,7 @@
 // Authentication controller — handles login and logout
 import { compare_password } from '../../utils/hash.js'
 import { asyncHandler } from '../../utils/AsyncHandler.js'
-import AppError from '../../utils/AppError.js'
+import { AppError } from '../../utils/AppError.js'
 import { successResponse } from '../../utils/ApiResponse.js'
 import { prisma } from '../../config/db.js'
 import { logger } from '../../utils/logger.js'

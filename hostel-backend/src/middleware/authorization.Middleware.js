@@ -1,5 +1,5 @@
 // Authorization middleware — restricts access based on user roles
-import AppError from "../utils/AppError.js";
+import { AppError } from "../utils/AppError.js";
 
 const ROLE_WEIGHTS = {
   SUPER_ADMIN: 3,

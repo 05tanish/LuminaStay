@@ -220,4 +220,4 @@ router.post('/otp/verify',
 // Logout — requires authentication to know which user's refresh token to invalidate
 router.post('/logout', protect, logout)
 
-export default router
+export const authRouter = router

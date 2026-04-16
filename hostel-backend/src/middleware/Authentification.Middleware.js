@@ -1,7 +1,7 @@
 // Authentication middleware — verifies access token from httpOnly cookie.
 // If token is expired, client should call POST /api/auth/refresh to get a new one.
 import { prisma } from "../config/db.js";
-import AppError from "../utils/AppError.js";
+import { AppError } from "../utils/AppError.js";
 import { asyncHandler } from "../utils/AsyncHandler.js";
 import { verifyAccessToken } from "../utils/jwt.js";
 

@@ -12,4 +12,4 @@ router.post(
   razorpayWebhook
 );
 
-export default router;
+export const paymentWebhookRouter = router;

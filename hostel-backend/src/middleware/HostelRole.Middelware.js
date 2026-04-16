@@ -1,5 +1,5 @@
 import { prisma } from "../config/db.js";
-import AppError from "../utils/AppError.js";
+import { AppError } from "../utils/AppError.js";
 import { asyncHandler } from "../utils/AsyncHandler.js";
 
 export const authorizeHostelRole = (...allowedRoles) => {

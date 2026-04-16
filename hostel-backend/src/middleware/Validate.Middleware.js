@@ -1,4 +1,4 @@
-import AppError from "../utils/AppError.js";
+import { AppError } from "../utils/AppError.js";
 
 // Validates req.body against a Zod schema
 export const validate = (schema) => (req, res, next) => {
