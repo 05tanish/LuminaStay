@@ -7,7 +7,8 @@ import {
   getUserPaymentHistoryService,
   getAllPaymentsService,
   getRevenueByHostelService,
-  getPlatformRevenueService
+  getPlatformRevenueService,
+  verifyPaymentSignatureService
 } from "./Payment.Service.js";
 
 
@@ -91,5 +92,25 @@ export const getRevenue = asyncHandler(async (req, res) => {
     statusCode: 200,
     message: "Revenue fetched successfully",
     data: revenue
+  });
+});
+
+export const verifyOrder = asyncHandler(async (req, res) => {
+  const { razorpayOrderId, razorpayPaymentId, razorpaySignature, monthlyFeeId } = req.body;
+
+  if (!razorpayOrderId || !razorpayPaymentId || !razorpaySignature || !monthlyFeeId) {
+    throw new AppError("razorpayOrderId, razorpayPaymentId, razorpaySignature, and monthlyFeeId are required", 400);
+  }
+
+  await verifyPaymentSignatureService({
+    razorpayOrderId,
+    razorpayPaymentId,
+    razorpaySignature,
+    monthlyFeeId
+  });
+
+  return successResponse(res, {
+    statusCode: 200,
+    message: "Payment verified successfully"
   });
 });

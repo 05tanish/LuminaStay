@@ -9,11 +9,14 @@ export const verifyWebhookService = async (rawBody, signature) => {
     .update(rawBody) // ⚠️ RAW buffer, NOT JSON.stringify
     .digest("hex");
 
-  // 🔐 Step 2: Compare signatures securely
-  if (!crypto.timingSafeEqual(
-    Buffer.from(expectedSignature),
-    Buffer.from(signature)
-  )) {
+  // 🔐 Step 2: Compare signatures securely (verify matching length first to avoid crypto timingSafeEqual crashes)
+  const expectedBuffer = Buffer.from(expectedSignature);
+  const signatureBuffer = Buffer.from(signature || "");
+
+  if (
+    expectedBuffer.length !== signatureBuffer.length ||
+    !crypto.timingSafeEqual(expectedBuffer, signatureBuffer)
+  ) {
     throw new Error("Invalid webhook signature");
   }
 

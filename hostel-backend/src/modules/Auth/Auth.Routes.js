@@ -7,6 +7,7 @@ import { rateLimiter } from '../../middleware/Ratelimiter.js'
 import { protect } from '../../middleware/Authentification.Middleware.js'
 import { validate } from '../../middleware/Validate.Middleware.js'
 import { registerSchema, loginSchema, googleLoginSchema, googleRegisterSchema, sendOtpSchema, verifyOtpSchema } from './Auth.Schema.js'
+import { requestPasswordReset, resetPassword, verifyResetToken } from './PasswordReset.Controller.js'
 
 const router = Router()
 
@@ -219,5 +220,21 @@ router.post('/otp/verify',
  */
 // Logout — requires authentication to know which user's refresh token to invalidate
 router.post('/logout', protect, logout)
+
+// Password Reset Flow
+router.post('/forgot-password',
+  rateLimiter({ window: 900, limit: 5, message: "Too many forgot password requests. Please try again in 15 minutes." }),
+  requestPasswordReset
+)
+
+router.post('/reset-password',
+  rateLimiter({ window: 900, limit: 5, message: "Too many reset password attempts. Please try again in 15 minutes." }),
+  resetPassword
+)
+
+router.get('/verify-reset-token/:token',
+  rateLimiter({ window: 900, limit: 10 }),
+  verifyResetToken
+)
 
 export const authRouter = router

@@ -33,6 +33,12 @@ export const rateLimiter = ({ window = 60, limit = 5, message = "Too many reques
       // Subsequent requests just increment the counter.
       if (count === 1) {
         await redis.expire(key, window);
+      } else {
+        // Fallback safety to prevent permanent lockouts if an earlier EXPIRE command failed
+        const currentTtl = await redis.ttl(key);
+        if (currentTtl === -1) {
+          await redis.expire(key, window);
+        }
       }
 
       // Get remaining TTL for response headers

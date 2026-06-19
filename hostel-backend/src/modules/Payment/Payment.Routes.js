@@ -9,6 +9,7 @@ import {
     getUserPayments,
     getAllPayments,
     getRevenue,
+    verifyOrder,
 } from "./Payment.Controller.js";
 import { razorpayWebhook } from "./PaymentWebhook.Controller.js";
 
@@ -45,6 +46,8 @@ const router = Router();
  *         description: Order created
  */
 router.post("/create-order", protect, validate(createOrderSchema), createOrder);
+router.post("/online/create-order", protect, validate(createOrderSchema), createOrder);
+router.post("/online/verify", protect, verifyOrder);
 
 /**
  * @swagger

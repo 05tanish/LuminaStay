@@ -446,10 +446,9 @@ export const getSuperAdminComplaintsService = async (
 // add comment to complaint 
 export const addComplaintCommentService = async (
     complaintId,
-    userId,
+    actor,
     content
 ) => {
-
     if (!content || content.trim().length === 0) {
         throw new AppError("Comment cannot be empty", 400);
     }
@@ -462,10 +461,30 @@ export const addComplaintCommentService = async (
         throw new AppError("Complaint not found", 404);
     }
 
+    // 🔐 Scoping & Tenant Isolation Check
+    if (actor.role === "USER") {
+        if (complaint.userId !== actor.id) {
+            throw new AppError("Not authorized to comment on this complaint", 403);
+        }
+    } else if (actor.role === "ADMIN") {
+        if (complaint.hostelId !== actor.hostelId) {
+            throw new AppError("Not authorized to comment on this complaint", 403);
+        }
+    } else if (actor.role === "SUPER_ADMIN") {
+        const ownership = await prisma.userHostel.findFirst({
+            where: { userId: actor.id, hostelId: complaint.hostelId }
+        });
+        if (!ownership) {
+            throw new AppError("Not authorized to comment on this complaint", 403);
+        }
+    } else {
+        throw new AppError("Unauthorized role", 403);
+    }
+
     const comment = await prisma.complaintComment.create({
         data: {
             complaintId,
-            userId,
+            userId: actor.id,
             content
         },
         include: {
@@ -473,10 +492,9 @@ export const addComplaintCommentService = async (
         }
     });
 
-
     logger.info("Comment added to complaint", {
         complaintId,
-        userId
+        userId: actor.id
     });
 
     return comment;
@@ -488,13 +506,32 @@ export const getComplaintCommentsService = async (
     limit = 10,
     actor
 ) => {
-
     const complaint = await prisma.complaint.findUnique({
         where: { id: complaintId }
     });
 
     if (!complaint) {
         throw new AppError("Complaint not found", 404);
+    }
+
+    // 🔐 Scoping & Tenant Isolation Check
+    if (actor.role === "USER") {
+        if (complaint.userId !== actor.id) {
+            throw new AppError("Not authorized to access comments for this complaint", 403);
+        }
+    } else if (actor.role === "ADMIN") {
+        if (complaint.hostelId !== actor.hostelId) {
+            throw new AppError("Not authorized to access comments for this complaint", 403);
+        }
+    } else if (actor.role === "SUPER_ADMIN") {
+        const ownership = await prisma.userHostel.findFirst({
+            where: { userId: actor.id, hostelId: complaint.hostelId }
+        });
+        if (!ownership) {
+            throw new AppError("Not authorized to access comments for this complaint", 403);
+        }
+    } else {
+        throw new AppError("Unauthorized role", 403);
     }
 
     const safeLimit = Math.min(limit, 50);

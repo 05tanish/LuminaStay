@@ -22,6 +22,9 @@ export const authApi = {
     phone?: string;
     otp?: string;
   }) => api.post("/invite/register", data),
+  requestPasswordReset: (email: string) => api.post("/auth/forgot-password", { email }),
+  verifyResetToken: (token: string) => api.get(`/auth/verify-reset-token/${token}`),
+  resetPassword: (data: { token: string; newPassword: string }) => api.post("/auth/reset-password", data),
 };
 
 // ─── Hostel ──────────────────────────────────────────────────────────────────

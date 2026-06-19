@@ -427,6 +427,29 @@ export function useRevenue() {
   });
 }
 
+export function useCreateOnlineOrder() {
+  return useMutation({
+    mutationFn: paymentApi.createOrder,
+    onError: (e: any) =>
+      toast.error(e.response?.data?.message || "Failed to initiate online payment"),
+  });
+}
+
+export function useVerifyOnlineOrder() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: paymentApi.verifyOrder,
+    onSuccess: () => {
+      toast.success("Payment successful!");
+      qc.invalidateQueries({ queryKey: ["my-fees"] });
+      qc.invalidateQueries({ queryKey: ["fees"] });
+      qc.invalidateQueries({ queryKey: ["revenue"] });
+    },
+    onError: (e: any) =>
+      toast.error(e.response?.data?.message || "Payment verification failed"),
+  });
+}
+
 // ─── NOTIFICATIONS ────────────────────────────────────────────────────────────
 
 export function useNotifications(page = 1) {

@@ -1,9 +1,26 @@
+import crypto from "crypto";
 import { prisma } from "../../config/db.js";
 import { razorpay } from "../../config/razorpay.js";
 import { AppError } from "../../utils/AppError.js";
 import { logger } from "../../utils/logger.js";
 import { sendPaymentConfirmationEmail } from "../../utils/Email.Service.js";
+
+const isRazorpayConfigured = () => {
+  const keyId = process.env.RAZORPAY_KEY_ID;
+  const keySecret = process.env.RAZORPAY_KEY_SECRET;
+  return (
+    keyId &&
+    keySecret &&
+    keyId !== "your_key" &&
+    keySecret !== "your_secret" &&
+    !keyId.startsWith("your_")
+  );
+};
+
 export const createOrderService = async ({ userId, monthlyFeeId }) => {
+  if (!isRazorpayConfigured()) {
+    throw new AppError("Online payments are coming soon. Please pay via cash at the office.", 400);
+  }
 
   const fee = await prisma.monthlyFee.findUnique({
     where: { id: monthlyFeeId }
@@ -14,6 +31,7 @@ export const createOrderService = async ({ userId, monthlyFeeId }) => {
     select: { hostelId: true }
   });
 
+  if (!user) throw new AppError("User not found", 404);
   if (!fee) throw new AppError("Fee not found", 404);
 
   // Validate amount
@@ -99,6 +117,10 @@ export const cashPaymentService = async ({
     where: { id: userId },
     select: { hostelId: true }
   });
+
+  if (!user) {
+    throw new AppError("User not found", 404);
+  }
 
   if (!fee) {
     throw new AppError("Fee not found", 404);
@@ -273,4 +295,65 @@ export const getPlatformRevenueService = async (actorId = null, actorRole = null
   });
 
   return { totalRevenue: result._sum.amount || 0 };
+};
+
+// Synchronous online payment verification using Razorpay signature validation
+export const verifyPaymentSignatureService = async ({
+  razorpayOrderId,
+  razorpayPaymentId,
+  razorpaySignature,
+  monthlyFeeId
+}) => {
+  if (!razorpayOrderId || !razorpayPaymentId || !razorpaySignature || !monthlyFeeId) {
+    throw new AppError("Missing payment verification details", 400);
+  }
+
+  const keySecret = process.env.RAZORPAY_KEY_SECRET;
+  const text = `${razorpayOrderId}|${razorpayPaymentId}`;
+  
+  const generatedSignature = crypto
+    .createHmac("sha256", keySecret)
+    .update(text)
+    .digest("hex");
+
+  if (generatedSignature !== razorpaySignature) {
+    throw new AppError("Payment verification failed: Signature mismatch", 400);
+  }
+
+  const payment = await prisma.payment.findFirst({
+    where: { razorpayOrderId }
+  });
+
+  if (!payment) {
+    throw new AppError("Associated payment record not found", 404);
+  }
+
+  if (payment.status === "PAID") {
+    return true; // Already processed by webhook
+  }
+
+  await prisma.$transaction([
+    prisma.payment.update({
+      where: { id: payment.id },
+      data: {
+        status: "PAID",
+        razorpayPaymentId
+      }
+    }),
+    prisma.monthlyFee.update({
+      where: { id: monthlyFeeId },
+      data: {
+        status: "PAID",
+        paidAt: new Date()
+      }
+    })
+  ]);
+
+  logger.info("Razorpay signature verified and payment processed synchronously", {
+    monthlyFeeId,
+    razorpayPaymentId,
+    razorpayOrderId
+  });
+
+  return true;
 };

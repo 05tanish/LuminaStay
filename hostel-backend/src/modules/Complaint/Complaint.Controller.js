@@ -139,7 +139,7 @@ export const addComplaintComment = asyncHandler(async (req, res) => {
 
     const result = await addComplaintCommentService(
         complaintID,
-        req.user.id,
+        req.user,
         content
     );
 
