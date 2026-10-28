@@ -40,7 +40,7 @@ export default function ContactPage() {
       <header className="border-b bg-background/95 backdrop-blur-lg sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
           <Link href="/" className="text-xl sm:text-2xl font-bold tracking-tight text-primary flex items-center gap-1 sm:gap-2">
-            HostelFlow<span className="text-indigo-500 text-2xl sm:text-3xl leading-none">.</span>
+            LuminaStay<span className="text-indigo-500 text-2xl sm:text-3xl leading-none">.</span>
           </Link>
           <Link href="/">
             <Button variant="ghost" size="sm" className="gap-2">
@@ -59,7 +59,7 @@ export default function ContactPage() {
             <div>
               <h1 className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">Get in Touch</h1>
               <p className="text-lg text-muted-foreground leading-relaxed">
-                Have questions about HostelFlow? We're here to help. Send us a message and we'll respond as soon as possible.
+                Have questions about LuminaStay? We're here to help. Send us a message and we'll respond as soon as possible.
               </p>
             </div>
 
@@ -228,7 +228,7 @@ export default function ContactPage() {
       {/* Footer */}
       <footer className="border-t mt-16">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 text-center text-sm text-muted-foreground">
-          <p>© 2026 HostelFlow Systems Inc. All rights reserved.</p>
+          <p>© 2026 LuminaStay Systems Inc. All rights reserved.</p>
         </div>
       </footer>
     </div>

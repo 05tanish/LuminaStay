@@ -9,7 +9,7 @@ export default function PrivacyPolicyPage() {
       <header className="border-b bg-background/95 backdrop-blur-lg sticky top-0 z-50">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
           <Link href="/" className="text-xl sm:text-2xl font-bold tracking-tight text-primary flex items-center gap-1 sm:gap-2">
-            HostelFlow<span className="text-indigo-500 text-2xl sm:text-3xl leading-none">.</span>
+            LuminaStay<span className="text-indigo-500 text-2xl sm:text-3xl leading-none">.</span>
           </Link>
           <Link href="/">
             <Button variant="ghost" size="sm" className="gap-2">
@@ -35,7 +35,7 @@ export default function PrivacyPolicyPage() {
               Your Privacy Matters
             </h3>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              At HostelFlow, we take your privacy seriously. This policy explains how we collect, use, and protect your personal information. We never sell your data to third parties.
+              At LuminaStay, we take your privacy seriously. This policy explains how we collect, use, and protect your personal information. We never sell your data to third parties.
             </p>
           </div>
 
@@ -48,7 +48,7 @@ export default function PrivacyPolicyPage() {
               
               <h3 className="text-xl font-semibold mt-6 mb-3">Personal Information</h3>
               <p className="text-muted-foreground leading-relaxed mb-4">
-                When you register for HostelFlow, we collect:
+                When you register for LuminaStay, we collect:
               </p>
               <ul className="list-disc list-inside space-y-2 text-muted-foreground ml-4">
                 <li>Name and email address</li>
@@ -170,7 +170,7 @@ export default function PrivacyPolicyPage() {
             <section>
               <h2 className="text-2xl font-semibold mb-4">8. Children's Privacy</h2>
               <p className="text-muted-foreground leading-relaxed">
-                HostelFlow is not intended for users under 13 years of age. We do not knowingly collect personal information from children. If you believe we have collected information from a child, please contact us immediately.
+                LuminaStay is not intended for users under 13 years of age. We do not knowingly collect personal information from children. If you believe we have collected information from a child, please contact us immediately.
               </p>
             </section>
 
@@ -197,7 +197,7 @@ export default function PrivacyPolicyPage() {
                 If you have questions about this Privacy Policy or our data practices:
               </p>
               <div className="bg-muted/50 rounded-lg p-6 space-y-3">
-                <p className="font-medium">HostelFlow Privacy Team</p>
+                <p className="font-medium">LuminaStay Privacy Team</p>
                 <p className="text-muted-foreground">
                   <strong>Email:</strong> <a href="mailto:tanishjain2004@gmail.com" className="text-indigo-600 hover:underline">tanishjain2004@gmail.com</a>
                 </p>
@@ -216,7 +216,7 @@ export default function PrivacyPolicyPage() {
       {/* Footer */}
       <footer className="border-t mt-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 text-center text-sm text-muted-foreground">
-          <p>© 2026 HostelFlow Systems Inc. All rights reserved.</p>
+          <p>© 2026 LuminaStay Systems Inc. All rights reserved.</p>
         </div>
       </footer>
     </div>

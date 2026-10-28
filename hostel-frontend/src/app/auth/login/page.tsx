@@ -142,7 +142,7 @@ export default function LoginPage() {
       <CardHeader className="space-y-2 text-center text-primary">
         <CardTitle className="text-2xl font-bold tracking-tight">Welcome back</CardTitle>
         <CardDescription className="text-muted-foreground">
-          Sign in to your HostelFlow account.
+          Sign in to your LuminaStay account.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">

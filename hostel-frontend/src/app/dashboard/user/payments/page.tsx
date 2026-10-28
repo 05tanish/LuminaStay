@@ -62,7 +62,7 @@ export default function UserPaymentsPage() {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_placeholder", // Test placeholder
         amount: order.amount,
         currency: order.currency,
-        name: "HostelFlow",
+        name: "LuminaStay",
         description: `Monthly Fee - ${fee.month}`,
         order_id: order.id,
         handler: async (response: any) => {
@@ -87,7 +87,7 @@ export default function UserPaymentsPage() {
           contact: "",
         },
         theme: {
-          color: "#4f46e5", // Indigo layout accent matching HostelFlow design aesthetics
+          color: "#4f46e5", // Indigo layout accent matching LuminaStay design aesthetics
         },
         modal: {
           ondismiss: () => {

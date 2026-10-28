@@ -27,7 +27,7 @@ export default function LandingPage() {
       {/* ===================== Navigation ===================== */}
       <header className="w-full px-4 sm:px-6 lg:px-8 py-4 sm:py-6 flex justify-between items-center fixed top-0 z-50 bg-background/95 backdrop-blur-lg border-b">
         <div className="text-xl sm:text-2xl font-bold tracking-tight text-primary flex items-center gap-1 sm:gap-2">
-          HostelFlow<span className="text-indigo-500 text-2xl sm:text-3xl leading-none">.</span>
+          LuminaStay<span className="text-indigo-500 text-2xl sm:text-3xl leading-none">.</span>
         </div>
         <div className="flex items-center gap-2 sm:gap-4">
           <ThemeToggle />
@@ -55,15 +55,15 @@ export default function LandingPage() {
         {/* Header Hero */}
         <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-center text-center py-12 sm:py-16 md:py-24 relative">
           <Badge variant="outline" className="mb-4 sm:mb-6 px-3 sm:px-4 py-1 text-xs sm:text-sm bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800 rounded-full">
-            🚀 The Next Generation SaaS for Campus Housing
+            🚀 THE ALL-IN-ONE HOSTEL MANAGEMENT PLATFORM
           </Badge>
 
           <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-extrabold tracking-tighter mb-4 sm:mb-6 bg-gradient-to-br from-foreground via-foreground to-muted-foreground bg-clip-text text-transparent max-w-4xl mx-auto leading-tight px-4">
-            Manage your entire hostel with absolute precision
+            One Platform. Every Hostel. Total Control.
           </h1>
           
-          <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-8 sm:mb-10 leading-relaxed px-4">
-            Eliminate spreadsheets and manual tracking. Simplify room allocations, automate fee collections, broadcast daily food menus, and resolve complaints faster than ever.
+          <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto mb-8 sm:mb-10 leading-relaxed px-4">
+            Manage your entire hostel business from a single dashboard. Oversee multiple properties, track occupancy and revenue, automate fee collection, manage staff, and deliver a better living experience — all without the spreadsheets and manual work.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-stretch sm:items-center w-full max-w-md sm:max-w-none px-4">
@@ -116,9 +116,9 @@ export default function LandingPage() {
         <section id="features" className="w-full bg-muted/30 py-12 sm:py-16 md:py-24 border-y">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-10 sm:mb-12 md:mb-16">
-              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 sm:mb-4 tracking-tight px-4">Everything you need, nothing you don't</h2>
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 sm:mb-4 tracking-tight px-4">Multi-Property Management. Centralized Operations.</h2>
               <p className="text-sm sm:text-base text-muted-foreground max-w-2xl mx-auto px-4">
-                Built exactly to specifications for Multi-property Super Admins, single building Hostel Admins, and the Students who live there.
+                Built for Hostel Owners and Managers. Designed for Multi-property Super Admins, single building Hostel Admins, and the Residents who live there.
               </p>
             </div>
 
@@ -201,30 +201,36 @@ export default function LandingPage() {
               
               <div className="flex-1 space-y-6 sm:space-y-8 z-10 text-white">
                 <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight leading-tight">
-                  Stop running your housing business on paper
+                  THE SMARTER WAY TO RUN HOSTELS
                 </h2>
                 <p className="text-zinc-300 sm:text-zinc-400 text-base sm:text-lg max-w-md mx-auto md:mx-0">
-                  HostelFlow digitizes your entire operation, reducing administrative overhead by 60% and vastly improving student satisfaction.
+                  Spend Less Time Managing Operations. More Time Growing Your Business.
+                </p>
+                <p className="text-zinc-400 text-sm sm:text-base max-w-lg mx-auto md:mx-0">
+                  Stop juggling spreadsheets, scattered payment records, and repetitive administrative tasks. Bring your properties, residents, collections, and daily operations together in one organized platform.
                 </p>
                 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 pt-4">
                   <div className="flex items-center gap-3 justify-center md:justify-start">
-                    <div className="p-2 bg-zinc-800 rounded-lg shrink-0"><ShieldCheck className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-400" /></div>
-                    <span className="font-medium text-xs sm:text-sm text-zinc-200">Bank-level Security</span>
+                    <div className="p-2 bg-zinc-800 rounded-lg shrink-0"><Users className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-400" /></div>
+                    <span className="font-medium text-xs sm:text-sm text-zinc-200">Role-Based Access</span>
                   </div>
                   <div className="flex items-center gap-3 justify-center md:justify-start">
-                    <div className="p-2 bg-zinc-800 rounded-lg shrink-0"><Zap className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-400" /></div>
-                    <span className="font-medium text-xs sm:text-sm text-zinc-200">Real-time Syncing</span>
+                    <div className="p-2 bg-zinc-800 rounded-lg shrink-0"><Building2 className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-400" /></div>
+                    <span className="font-medium text-xs sm:text-sm text-zinc-200">Centralized Management</span>
                   </div>
                   <div className="flex items-center gap-3 justify-center md:justify-start">
                     <div className="p-2 bg-zinc-800 rounded-lg shrink-0"><Smartphone className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-400" /></div>
-                    <span className="font-medium text-xs sm:text-sm text-zinc-200">Mobile Responsive</span>
+                    <span className="font-medium text-xs sm:text-sm text-zinc-200">Mobile-Friendly Access</span>
                   </div>
                   <div className="flex items-center gap-3 justify-center md:justify-start">
                     <div className="p-2 bg-zinc-800 rounded-lg shrink-0"><BarChart3 className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-400" /></div>
-                    <span className="font-medium text-xs sm:text-sm text-zinc-200">Analytics Dashboard</span>
+                    <span className="font-medium text-xs sm:text-sm text-zinc-200">Business Visibility</span>
                   </div>
                 </div>
+                <p className="text-zinc-400 text-xs sm:text-sm italic max-w-lg mx-auto md:mx-0 pt-2">
+                  Keep property access organized by user role. Manage multiple hostels from one dashboard. Give managers and residents access on the go. Track occupancy, payments, and operational activity.
+                </p>
               </div>
 
               {/* Decorative graphic - hidden on mobile */}
@@ -252,7 +258,7 @@ export default function LandingPage() {
             <div className="text-center mb-10 sm:mb-12 md:mb-16">
               <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 sm:mb-4 tracking-tight">Loved by Hostel Owners</h2>
               <p className="text-sm sm:text-base text-muted-foreground max-w-2xl mx-auto px-4">
-                See what our customers have to say about HostelFlow
+                See what our customers have to say about LuminaStay
               </p>
             </div>
 
@@ -267,7 +273,7 @@ export default function LandingPage() {
                   ))}
                 </div>
                 <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
-                  "HostelFlow transformed how we manage our 200-bed facility. Payment tracking is now effortless, and our residents love the food menu feature!"
+                  "LuminaStay transformed how we manage our 200-bed facility. Payment tracking is now effortless, and our residents love the food menu feature!"
                 </p>
                 <div className="flex items-center gap-3 pt-4 border-t">
                   <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center text-indigo-600 font-semibold">
@@ -290,7 +296,7 @@ export default function LandingPage() {
                   ))}
                 </div>
                 <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
-                  "Managing 5 hostels was a nightmare before HostelFlow. Now I can oversee everything from one dashboard. The complaint system is a game-changer!"
+                  "Managing 5 hostels was a nightmare before LuminaStay. Now I can oversee everything from one dashboard. The complaint system is a game-changer!"
                 </p>
                 <div className="flex items-center gap-3 pt-4 border-t">
                   <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center text-emerald-600 font-semibold">
@@ -348,7 +354,7 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
           <div className="col-span-1 sm:col-span-2">
              <div className="text-lg sm:text-xl font-bold tracking-tight text-primary mb-3 sm:mb-4">
-                HostelFlow.
+                LuminaStay.
              </div>
              <p className="text-xs sm:text-sm text-muted-foreground max-w-sm leading-relaxed">
                The premier operating system for student accommodations, PGs, and multi-property hostels. Simplify your daily workflow.
@@ -375,7 +381,7 @@ export default function LandingPage() {
         </div>
         
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 sm:mt-12 pt-6 sm:pt-8 border-t flex flex-col sm:flex-row items-center justify-between text-xs text-muted-foreground gap-4">
-          <p className="text-center sm:text-left">© 2026 HostelFlow Systems Inc. All rights reserved.</p>
+          <p className="text-center sm:text-left">© 2026 LuminaStay Systems Inc. All rights reserved.</p>
           <div className="flex gap-4">
             <span className="hover:text-foreground cursor-pointer transition-colors">Twitter</span>
             <span className="hover:text-foreground cursor-pointer transition-colors">LinkedIn</span>

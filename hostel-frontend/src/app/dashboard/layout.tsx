@@ -108,7 +108,7 @@ export default function DashboardLayout({
       <aside className="fixed inset-y-0 left-0 z-10 hidden w-64 flex-col border-r bg-background md:flex">
         <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
           <Link href={`/dashboard/${user?.role === "SUPER_ADMIN" ? "superadmin" : user?.role === "ADMIN" ? "admin" : "user"}`} className="flex items-center gap-2 font-semibold text-primary">
-            <span className="text-xl tracking-tight">HostelFlow<span className="text-indigo-500">.</span></span>
+            <span className="text-xl tracking-tight">LuminaStay<span className="text-indigo-500">.</span></span>
           </Link>
         </div>
         <div className="flex-1 flex flex-col justify-between">

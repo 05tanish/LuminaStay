@@ -9,7 +9,7 @@ export default function TermsOfServicePage() {
       <header className="border-b bg-background/95 backdrop-blur-lg sticky top-0 z-50">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
           <Link href="/" className="text-xl sm:text-2xl font-bold tracking-tight text-primary flex items-center gap-1 sm:gap-2">
-            HostelFlow<span className="text-indigo-500 text-2xl sm:text-3xl leading-none">.</span>
+            LuminaStay<span className="text-indigo-500 text-2xl sm:text-3xl leading-none">.</span>
           </Link>
           <Link href="/">
             <Button variant="ghost" size="sm" className="gap-2">
@@ -32,14 +32,14 @@ export default function TermsOfServicePage() {
             <section>
               <h2 className="text-2xl font-semibold mb-4">1. Acceptance of Terms</h2>
               <p className="text-muted-foreground leading-relaxed">
-                By accessing and using HostelFlow ("the Service"), you accept and agree to be bound by the terms and provision of this agreement. If you do not agree to these Terms of Service, please do not use the Service.
+                By accessing and using LuminaStay ("the Service"), you accept and agree to be bound by the terms and provision of this agreement. If you do not agree to these Terms of Service, please do not use the Service.
               </p>
             </section>
 
             <section>
               <h2 className="text-2xl font-semibold mb-4">2. Description of Service</h2>
               <p className="text-muted-foreground leading-relaxed mb-4">
-                HostelFlow provides a comprehensive hostel management platform that includes:
+                LuminaStay provides a comprehensive hostel management platform that includes:
               </p>
               <ul className="list-disc list-inside space-y-2 text-muted-foreground ml-4">
                 <li>Room and bed allocation management</li>
@@ -102,7 +102,7 @@ export default function TermsOfServicePage() {
             <section>
               <h2 className="text-2xl font-semibold mb-4">7. Intellectual Property</h2>
               <p className="text-muted-foreground leading-relaxed">
-                The Service and its original content, features, and functionality are owned by HostelFlow Systems Inc. and are protected by international copyright, trademark, patent, trade secret, and other intellectual property laws.
+                The Service and its original content, features, and functionality are owned by LuminaStay Systems Inc. and are protected by international copyright, trademark, patent, trade secret, and other intellectual property laws.
               </p>
             </section>
 
@@ -116,7 +116,7 @@ export default function TermsOfServicePage() {
             <section>
               <h2 className="text-2xl font-semibold mb-4">9. Limitation of Liability</h2>
               <p className="text-muted-foreground leading-relaxed">
-                In no event shall HostelFlow Systems Inc., nor its directors, employees, partners, agents, suppliers, or affiliates, be liable for any indirect, incidental, special, consequential, or punitive damages, including loss of profits, data, or other intangible losses.
+                In no event shall LuminaStay Systems Inc., nor its directors, employees, partners, agents, suppliers, or affiliates, be liable for any indirect, incidental, special, consequential, or punitive damages, including loss of profits, data, or other intangible losses.
               </p>
             </section>
 
@@ -133,7 +133,7 @@ export default function TermsOfServicePage() {
                 If you have any questions about these Terms, please contact us:
               </p>
               <div className="bg-muted/50 rounded-lg p-6 space-y-2">
-                <p className="font-medium">HostelFlow Support</p>
+                <p className="font-medium">LuminaStay Support</p>
                 <p className="text-muted-foreground">Email: <a href="mailto:tanishjain2004@gmail.com" className="text-indigo-600 hover:underline">tanishjain2004@gmail.com</a></p>
                 <p className="text-muted-foreground">Website: <a href="https://hostelflow.com" className="text-indigo-600 hover:underline">hostelflow.com</a></p>
               </div>
@@ -145,7 +145,7 @@ export default function TermsOfServicePage() {
       {/* Footer */}
       <footer className="border-t mt-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 text-center text-sm text-muted-foreground">
-          <p>© 2026 HostelFlow Systems Inc. All rights reserved.</p>
+          <p>© 2026 LuminaStay Systems Inc. All rights reserved.</p>
         </div>
       </footer>
     </div>

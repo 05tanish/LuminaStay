@@ -7,7 +7,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       {/* Header */}
       <header className="w-full px-6 py-5 flex items-center justify-between">
         <Link href="/" className="text-xl font-bold text-white tracking-tight">
-          HostelFlow<span className="text-indigo-400">.</span>
+          LuminaStay<span className="text-indigo-400">.</span>
         </Link>
         <ThemeToggle />
       </header>
@@ -20,7 +20,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       </main>
 
       <footer className="py-6 text-center text-xs text-zinc-600">
-        &copy; 2026 HostelFlow. All rights reserved.
+        &copy; 2026 LuminaStay. All rights reserved.
       </footer>
     </div>
   );
